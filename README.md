@@ -308,42 +308,34 @@ curl -X DELETE "http://localhost:8000/trips/550e8400-e29b-41d4-a716-446655440000
 ```
 ai-vacation-planner/
 ├── app/
-│   ├── __init__.py
 │   ├── main.py                 # FastAPI application entry point
 │   ├── core/                   # Core configuration
-│   │   ├── __init__.py
 │   │   ├── config.py          # Environment settings
 │   │   ├── database.py        # Database connection
 │   │   ├── security.py        # JWT and password hashing
 │   │   └── dependencies.py    # FastAPI dependencies
 │   ├── models/                 # SQLAlchemy ORM models
-│   │   ├── __init__.py
 │   │   ├── user.py
 │   │   ├── trip.py
 │   │   └── itinerary.py
 │   ├── schemas/                # Pydantic schemas (DTOs)
-│   │   ├── __init__.py
 │   │   ├── user.py
 │   │   ├── trip.py
 │   │   └── itinerary.py
 │   ├── repositories/           # Data access layer
-│   │   ├── __init__.py
 │   │   ├── base_repository.py
 │   │   ├── user_repository.py
 │   │   ├── trip_repository.py
 │   │   └── itinerary_repository.py
 │   ├── services/               # Business logic layer
-│   │   ├── __init__.py
 │   │   ├── auth_service.py
 │   │   ├── trip_service.py
 │   │   └── itinerary_service.py
 │   └── controllers/            # HTTP request handlers
-│       ├── __init__.py
 │       ├── auth_controller.py
 │       ├── trip_controller.py
 │       └── itinerary_controller.py
 ├── tests/                      # Unit tests
-│   ├── __init__.py
 │   ├── test_auth.py
 │   ├── test_trips.py
 │   └── test_itineraries.py
