@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from .core.database import engine, Base
 from .controllers import auth, trip, itinerary
 
-# Create tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -15,13 +14,13 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
+# Routers
 app.include_router(auth.router)
 app.include_router(trip.router)
 app.include_router(itinerary.router)
@@ -36,4 +35,4 @@ def root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"}
+    return {"status": "The app is healthy and running!"}

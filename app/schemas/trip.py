@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 from datetime import datetime
-
+from uuid import UUID
 class TripCreate(BaseModel):
     destination: str = Field(..., min_length=1, max_length=100)
     days: int = Field(..., ge=1, le=365)
@@ -19,12 +19,12 @@ class TripUpdate(BaseModel):
     trip_style: Optional[str] = Field(None, pattern="^(budget|luxury|family|adventure)$")
 
 class TripResponse(BaseModel):
-    id: int
+    id: UUID
     destination: str
     days: int
     budget: float
     trip_style: str
-    user_id: int
+    user_id: UUID
     created_at: datetime
     updated_at: datetime
     
@@ -32,9 +32,9 @@ class TripResponse(BaseModel):
         from_attributes = True
 
 class TripCreateResponse(BaseModel):
-    id: int
+    id: UUID
     destination: str
     days: int
     budget: float
     trip_style: str
-    message: str = "Trip created successfully"
+    message: str 

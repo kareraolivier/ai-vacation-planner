@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlalchemy.orm import Session
-from .base_repository import BaseRepository
+from .base import BaseRepository
 from ..models.user import User
 
 class UserRepository(BaseRepository[User]):
