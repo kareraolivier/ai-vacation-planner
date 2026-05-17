@@ -7,7 +7,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="AI Vacation Planner API",
-    description="Backend API for intelligent trip planning assistant",
+    description="Backend API for trip planning assistant",
     version="1.0.0"
 )
 
