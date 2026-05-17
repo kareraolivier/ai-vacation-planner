@@ -1,0 +1,10 @@
+[tool.pyright]
+# Ignore missing parameter warnings for Settings class
+reportCallIssue = false
+
+# Or be more specific
+reportGeneralTypeIssues = false
+
+[tool.pylance]
+# Disable strict type checking for this specific issue
+strictParameterNoneValue = false

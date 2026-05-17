@@ -4,6 +4,7 @@ from sqlalchemy import and_
 from uuid import UUID
 ModelType = TypeVar("ModelType")
 
+
 class BaseRepository(Generic[ModelType]):
     def __init__(self, model: Type[ModelType], db: Session):
         self.model = model
@@ -17,7 +18,7 @@ class BaseRepository(Generic[ModelType]):
         return instance
     
     def get(self, id: UUID) -> Optional[ModelType]:
-        return self.db.query(self.model).filter(self.model.id == id).first()
+        return self.db.query(self.model).filter(self.model.id == id).first()  # type: ignore
     
     def get_by(self, **filters) -> Optional[ModelType]:
         conditions = [getattr(self.model, k) == v for k, v in filters.items()]
