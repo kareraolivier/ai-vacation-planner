@@ -1,7 +1,7 @@
 from typing import Generic, TypeVar, Type, List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
-
+from uuid import UUID
 ModelType = TypeVar("ModelType")
 
 class BaseRepository(Generic[ModelType]):
@@ -16,7 +16,7 @@ class BaseRepository(Generic[ModelType]):
         self.db.refresh(instance)
         return instance
     
-    def get(self, id: int) -> Optional[ModelType]:
+    def get(self, id: UUID) -> Optional[ModelType]:
         return self.db.query(self.model).filter(self.model.id == id).first()
     
     def get_by(self, **filters) -> Optional[ModelType]:
@@ -26,7 +26,7 @@ class BaseRepository(Generic[ModelType]):
     def get_all(self, skip: int = 0, limit: int = 100) -> List[ModelType]:
         return self.db.query(self.model).offset(skip).limit(limit).all()
     
-    def update(self, id: int, **kwargs) -> Optional[ModelType]:
+    def update(self, id: UUID, **kwargs) -> Optional[ModelType]:
         instance = self.get(id)
         if instance:
             for key, value in kwargs.items():
@@ -35,7 +35,7 @@ class BaseRepository(Generic[ModelType]):
             self.db.refresh(instance)
         return instance
     
-    def delete(self, id: int) -> bool:
+    def delete(self, id: UUID) -> bool:
         instance = self.get(id)
         if instance:
             self.db.delete(instance)

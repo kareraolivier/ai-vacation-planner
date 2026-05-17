@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import cast
 from sqlalchemy.orm import Session
 from ..core.database import get_db
 from ..core.dependencies import get_current_user
 from ..models.user import User
-from ..services.itinerary_service import ItineraryService
+from ..services.itinerary import ItineraryService
 from ..schemas.itinerary import ItineraryCreate, ItineraryOutput
+from typing import List, cast
+from uuid import UUID
 
 router = APIRouter(prefix="/itineraries", tags=["Itineraries"])
 
@@ -14,8 +17,9 @@ def create_itinerary(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    itinerary_service = ItineraryService(db)
-    result = itinerary_service.create_itinerary(current_user.id, itinerary_data)
+    itinerary = ItineraryService(db)
+    user_id: UUID = cast(UUID, current_user.id)
+    result = itinerary.create_itinerary(user_id, itinerary_data)
     
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
@@ -24,12 +28,13 @@ def create_itinerary(
 
 @router.get("/{trip_id}", response_model=ItineraryOutput)
 def get_trip_itinerary(
-    trip_id: int,
+    trip_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    itinerary_service = ItineraryService(db)
-    result = itinerary_service.get_trip_itinerary(current_user.id, trip_id)
+    itinerary = ItineraryService(db)
+    user_id: UUID = cast(UUID, current_user.id)
+    result = itinerary.get_trip_itinerary(user_id, trip_id)
     
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Itinerary not found")
