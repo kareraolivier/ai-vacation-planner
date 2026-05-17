@@ -28,9 +28,7 @@ app.include_router(itinerary.router)
 @app.get("/")
 def root():
     return {
-        "message": "Welcome to AI Vacation Planner API",
-        "docs": "/docs",
-        "redoc": "/redoc"
+        "message": "Welcome to AI Vacation Planner API"
     }
 
 @app.get("/health")
