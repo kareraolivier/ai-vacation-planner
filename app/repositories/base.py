@@ -18,7 +18,7 @@ class BaseRepository(Generic[ModelType]):
         return instance
     
     def get(self, id: UUID) -> Optional[ModelType]:
-        return self.db.query(self.model).filter(self.model.id == id).first()  # type: ignore
+        return self.db.query(self.model).filter(getattr(self.model, "id") == id).first()
     
     def get_by(self, **filters) -> Optional[ModelType]:
         conditions = [getattr(self.model, k) == v for k, v in filters.items()]
