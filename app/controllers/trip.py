@@ -20,7 +20,7 @@ def create_trip(
     user_id: UUID = cast(UUID, current_user.id)
     return trip.create_trip(user_id, trip_data)
 
-@router.get("/", response_model=List[TripResponse])
+@router.get("/", response_model=List[TripResponse], status_code=status.HTTP_200_OK)
 def get_user_trips(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -31,7 +31,7 @@ def get_user_trips(
     user_id: UUID = cast(UUID, current_user.id)
     return trip.get_user_trips(user_id)
 
-@router.get("/{trip_id}", response_model=TripResponse)
+@router.get("/{trip_id}", response_model=TripResponse, status_code=status.HTTP_200_OK)
 def get_trip(
     trip_id: UUID,
     current_user: User = Depends(get_current_user),
@@ -46,7 +46,7 @@ def get_trip(
     
     return trip
 
-@router.put("/{trip_id}", response_model=TripCreateResponse)
+@router.put("/{trip_id}", response_model=TripCreateResponse, status_code=status.HTTP_200_OK)
 def update_trip(
     trip_id: UUID,
     trip_data: TripUpdate,
