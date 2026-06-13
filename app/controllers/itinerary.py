@@ -56,17 +56,12 @@ def generate_ai_itinerary(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Generate and save an AI-powered itinerary for an existing trip.
-    This is a convenience endpoint that only requires the trip ID.
-    """
-    itinerary_service = ItineraryService(db)
+    itinerary = ItineraryService(db)
     user_id: UUID = cast(UUID, current_user.id)
 
-    # Create an empty itinerary data object to trigger AI generation
     itinerary_data = ItineraryCreate(trip_id=trip_id, days=None)
 
-    result = itinerary_service.create_itinerary(
+    result = itinerary.create_itinerary(
         user_id=user_id,
         itinerary_data=itinerary_data,
         use_ai=True
