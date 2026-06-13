@@ -7,19 +7,19 @@ from datetime import timedelta
 from ..core.config import settings
 from uuid import UUID
 
+
 class AuthService:
     def __init__(self, db: Session):
         self.user_repo = UserRepository(db)
-    
+
     def register_user(self, user_data: UserCreate) -> dict:
-     
+
         if self.user_repo.get_by_email(user_data.email):
             raise ValueError("Email already registered")
-        
+
         if self.user_repo.get_by_username(user_data.username):
             raise ValueError("Username already taken")
-        
-   
+
         hashed_password = get_password_hash(user_data.password)
         user = self.user_repo.create(
             email=user_data.email,
@@ -27,28 +27,28 @@ class AuthService:
             hashed_password=hashed_password,
             full_name=user_data.full_name
         )
-        
-     
+
         access_token = create_access_token(data={"sub": str(user.id)})
-        
+
         return {
             "access_token": access_token,
             "token_type": "bearer",
             "user": user
         }
-    
+
     def login_user(self, email: str, password: str) -> Optional[dict]:
         user = self.user_repo.get_by_email(email)
-        if not user or not verify_password(password, user.hashed_password.data):
+
+        if not user or not verify_password(password, str(user.hashed_password)):
             return None
-        
+
         access_token = create_access_token(data={"sub": str(user.id)})
-        
+
         return {
             "access_token": access_token,
             "token_type": "bearer",
             "user": user
         }
-            
+
     def get_current_user(self, user_id: UUID) -> Optional[dict]:
         return self.user_repo.get(user_id)
