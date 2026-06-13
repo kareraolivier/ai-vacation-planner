@@ -6,14 +6,13 @@ from app.core.config import settings
 
 class LLMService:
     def __init__(self):
-        """Initialize with Claude Haiku 4.5 (cheapest, good for learning)"""
+        """Initialize with Claude Haiku 4.5"""
         if not settings.ANTHROPIC_API_KEY:
             raise ValueError(
                 "ANTHROPIC_API_KEY not found in environment variables")
 
         self.client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        # Using Claude Haiku 4.5 - cheapest model, perfect for learning
-        self.model = "claude-haiku-4-5"  # or "claude-haiku-4-5-20251001"
+        self.model = "claude-haiku-4-5"
 
     def generate_itinerary(
         self,
@@ -22,7 +21,7 @@ class LLMService:
         budget: float,
         travel_style: str
     ) -> List[Dict[str, Any]]:
-        """Generate itinerary using Claude Haiku 4.5"""
+        """Generate itinerary"""
 
         system_prompt = self._build_system_prompt()
         user_prompt = self._build_user_prompt(
@@ -41,8 +40,6 @@ class LLMService:
             )
 
             itinerary_text = response.content[0].text
-            # Debug
-            print(f"Claude response received: {len(itinerary_text)} chars")
 
             # Extract JSON
             itinerary_text = self._extract_json(itinerary_text)
