@@ -11,6 +11,7 @@ from uuid import UUID
 
 router = APIRouter(prefix="/itineraries", tags=["Itineraries"])
 
+
 @router.post("/", response_model=ItineraryOutput, status_code=status.HTTP_201_CREATED)
 def create_itinerary(
     itinerary_data: ItineraryCreate,
@@ -20,11 +21,13 @@ def create_itinerary(
     itinerary = ItineraryService(db)
     user_id: UUID = cast(UUID, current_user.id)
     result = itinerary.create_itinerary(user_id, itinerary_data)
-    
+
     if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
-    
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+
     return result
+
 
 @router.get("/{trip_id}", response_model=ItineraryOutput)
 def get_trip_itinerary(
@@ -35,12 +38,44 @@ def get_trip_itinerary(
     itinerary = ItineraryService(db)
     user_id: UUID = cast(UUID, current_user.id)
     result = itinerary.get_trip_itinerary(user_id, trip_id)
-    
+
     if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Itinerary not found")
-    
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Itinerary not found")
+
     return {
         "trip_id": result["trip_id"],
         "itinerary": result["itinerary"],
         "message": "Itinerary retrieved successfully"
     }
+
+
+@router.post("/{trip_id}/generate-ai", response_model=ItineraryOutput, status_code=status.HTTP_201_CREATED)
+def generate_ai_itinerary(
+    trip_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Generate and save an AI-powered itinerary for an existing trip.
+    This is a convenience endpoint that only requires the trip ID.
+    """
+    itinerary_service = ItineraryService(db)
+    user_id: UUID = cast(UUID, current_user.id)
+
+    # Create an empty itinerary data object to trigger AI generation
+    itinerary_data = ItineraryCreate(trip_id=trip_id, days=None)
+
+    result = itinerary_service.create_itinerary(
+        user_id=user_id,
+        itinerary_data=itinerary_data,
+        use_ai=True
+    )
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Trip not found"
+        )
+
+    return result
