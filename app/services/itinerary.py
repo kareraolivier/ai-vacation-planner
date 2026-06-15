@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 
-from app.services.llm import LLMService
+from app.llm.itinerary_generator import LLMService
 from ..repositories.itinerary import ItineraryRepository
 from ..repositories.trip import TripRepository
 from ..schemas.itinerary import ItineraryCreate
@@ -25,8 +25,8 @@ class ItineraryService:
 
             days_list = self.llm_service.generate_itinerary(
                 destination=str(trip.destination),
-                days=trip.days.scalar(),
-                budget=trip.budget.scalar(),
+                days=int(trip.days),  # type: ignore
+                budget=float(trip.budget),  # type: ignore
                 travel_style=str(trip.trip_style)
             )
         else:
@@ -36,8 +36,8 @@ class ItineraryService:
 
                 days_list = self.llm_service.generate_itinerary(
                     destination=str(trip.destination),
-                    days=trip.days.scalar(),
-                    budget=trip.budget.scalar(),
+                    days=int(trip.days),  # type: ignore
+                    budget=float(trip.budget),  # type: ignore
                     travel_style=str(trip.trip_style)
                 )
 
@@ -49,7 +49,7 @@ class ItineraryService:
         return {
             "trip_id": itinerary.trip_id,
             "itinerary": itinerary.days,
-            "message": f"Itinerary {'AI-generated ' if use_ai else ''} created successfully"
+            "message": f"Itinerary {'AI-generated ' if use_ai else 'created'} successfully"
         }
 
     def get_trip_itinerary(self, user_id: UUID, trip_id: UUID) -> Optional[Dict[str, Any]]:
