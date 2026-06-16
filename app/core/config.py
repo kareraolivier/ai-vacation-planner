@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DATABASE_POOL_SIZE: int = 10
 
-    # OpenAI
+    # LLM API Keys
     ANTHROPIC_API_KEY: Optional[str] = None
 
     class Config:
