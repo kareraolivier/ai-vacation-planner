@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     # LLM API Keys
     ANTHROPIC_API_KEY: Optional[str] = None
 
+    # Weather API Key
+    OPENWEATHER_API_KEY: Optional[str] = None
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

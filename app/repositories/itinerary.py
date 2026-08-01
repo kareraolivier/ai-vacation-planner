@@ -23,3 +23,10 @@ class ItineraryRepository(BaseRepository[Itinerary]):
         if existing:
             return self.update(existing.id.value, days=days)
         return self.create(trip_id=trip_id, days=days)
+
+    def delete_by_trip(self, trip_id: UUID) -> bool:
+        existing = self.get_by_trip(trip_id)
+        if existing:
+            self.delete(existing.id.value)
+            return True
+        return False

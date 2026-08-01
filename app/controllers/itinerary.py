@@ -61,7 +61,7 @@ def generate_ai_itinerary(
 
     itinerary_data = ItineraryCreate(trip_id=trip_id, days=None)
 
-    result = itinerary.create_itinerary(
+    result = itinerary.ai_generate_itinerary(
         user_id=user_id,
         itinerary_data=itinerary_data,
         use_ai=True
