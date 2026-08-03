@@ -49,28 +49,20 @@ def get_trip_itinerary(
         "message": "Itinerary retrieved successfully"
     }
 
-
-@router.post("/{trip_id}/generate-ai", response_model=ItineraryOutput, status_code=status.HTTP_201_CREATED)
+# AI itinerary generation
+@router.post("/{trip_id}/generate-ai", response_model=ItineraryOutput,status_code=status.HTTP_201_CREATED)
 def generate_ai_itinerary(
     trip_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     itinerary = ItineraryService(db)
+
     user_id: UUID = cast(UUID, current_user.id)
-
-    itinerary_data = ItineraryCreate(trip_id=trip_id, days=None)
-
-    result = itinerary.ai_generate_itinerary(
-        user_id=user_id,
-        itinerary_data=itinerary_data,
-        use_ai=True
-    )
+    
+    result = itinerary.ai_generate_itinerary(user_id, trip_id)
 
     if not result:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Trip not found"
-        )
+        raise HTTPException(status_code=404, detail="Trip not found")
 
     return result
