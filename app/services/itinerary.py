@@ -14,7 +14,7 @@ class ItineraryService:
     
     def __init__(self, db: Session):
         self.itinerary_repo = ItineraryRepository(db)
-        self.trip_service = TripService()
+        self.trip_service = TripService(db)
         self.llm_service = LLMService()
         self.weather_service = WeatherService()
     
@@ -63,7 +63,7 @@ class ItineraryService:
     ) -> Optional[Dict[str, Any]]:
       
         # Get trip and verify ownership
-        trip = self.trip_service.get_user_trip(trip_id, user_id)
+        trip = self.trip_service.get_user_trip(user_id, trip_id)
         if not trip:
             return None
         
