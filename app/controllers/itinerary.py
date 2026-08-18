@@ -60,7 +60,6 @@ def generate_ai_itinerary(
     user_id: UUID = cast(UUID, current_user.id)
 
     itinerary_data = ItineraryCreate(trip_id=trip_id, days=None)
-
     result = itinerary.create_itinerary(
         user_id=user_id,
         itinerary_data=itinerary_data,
