@@ -25,7 +25,6 @@ class LLMService:
         )
 
         self.model = "claude-haiku-4-5"
-
         self.prompt_builder = PromptBuilder()
         self.parser = ResponseParser()
         self.fallback = FallbackItinerary()
@@ -63,6 +62,7 @@ class LLMService:
                 response_text=response_text,
                 expected_days=days
             )
+        
 
         except Exception as e:
             print(f"Claude error: {e}")
