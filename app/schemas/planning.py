@@ -2,9 +2,6 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 
-from .itinerary import DayActivity
-
-
 class PlanningRequest(BaseModel):
     message: str = Field(
         ...,
@@ -31,12 +28,6 @@ class PlanningResponse(BaseModel):
     tools_used: List[str]
     warnings: List[str] = []
     message: str
-
-
-class GeneratedItinerary(BaseModel):
-    summary: str = Field(..., description="Short overview of the recommended trip")
-    days: List[DayActivity]
-    notes: List[str] = Field(default_factory=list, description="Caveats or assumptions")
 
 
 class PlanningErrorResponse(BaseModel):

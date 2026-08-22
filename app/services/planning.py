@@ -7,6 +7,7 @@ from ..schemas.itinerary import DayActivity, ItineraryCreate
 from ..schemas.planning import PlanningRequest
 from .agents.graph import PlanningGraph, build_planning_graph
 from .agents.state import PlanningState
+from ..llm.itinerary_generator import LLMService
 from .itinerary import ItineraryService
 from .providers.llm import LLMConfigurationError, get_chat_model
 from .tools.registry import ToolRegistry
@@ -97,9 +98,10 @@ class PlanningService:
     def _build_graph(self) -> PlanningGraph:
         try:
             model = get_chat_model()
-        except LLMConfigurationError as exc:
+            llm_service = LLMService()
+        except (LLMConfigurationError, ValueError) as exc:
             raise RuntimeError(str(exc)) from exc
-        return build_planning_graph(model, self.tool_registry.all())
+        return build_planning_graph(model, self.tool_registry.all(), llm_service=llm_service)
 
 
 def _infer_destination(message: str) -> Optional[str]:

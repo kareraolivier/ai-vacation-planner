@@ -57,3 +57,32 @@ def test_planning_llm_unavailable(auth_client, monkeypatch):
 def test_planning_requires_auth(client):
     response = client.post("/planning/", json={"message": "Plan a trip"})
     assert response.status_code in {401, 403}
+
+
+def test_existing_generate_ai_endpoint_uses_planning_service(auth_client, monkeypatch):
+    from app.controllers import itinerary as itinerary_controller
+
+    class FakePlanningService:
+        def __init__(self, db=None):
+            self.db = db
+
+        def plan_trip(self, user_id, request):
+            return {
+                "trip_id": request.trip_id,
+                "destination": "Paris",
+                "summary": "A 3-day plan for Paris",
+                "itinerary": [{"day": 1, "activities": ["Louvre"]}],
+                "tools_used": ["search_travel_knowledge"],
+                "warnings": [],
+                "message": "Trip plan generated and itinerary saved",
+            }
+
+    monkeypatch.setattr(itinerary_controller, "PlanningService", FakePlanningService)
+    response = auth_client.post(
+        f"/itineraries/{uuid4()}/generate-ai",
+        json={"message": "Include weather-friendly activities"},
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["itinerary"][0]["activities"] == ["Louvre"]
+    assert "itinerary" in body

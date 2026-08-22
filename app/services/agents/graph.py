@@ -1,29 +1,19 @@
 import json
-import logging
 from typing import Any, Dict, List, Optional
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, START, StateGraph
 
 from ...core.config import settings
-from ...schemas.planning import GeneratedItinerary
+from ...llm.itinerary_generator import LLMService
 from ..tools.base import AgentTool
 from .state import PlanningState
-
-logger = logging.getLogger(__name__)
 
 REASON_SYSTEM_PROMPT = """You are a vacation planning agent.
 Decide which tools, if any, are needed to answer the traveler. Call only the tools that add useful information.
 Available capabilities include weather, maps/places, pricing, and the travel knowledge base.
 Do not call a tool unless the request needs it. After you have enough information, stop calling tools.
-Do not write the final day-by-day itinerary yourself; another step will compose it.
-"""
-
-COMPOSE_SYSTEM_PROMPT = """You are a vacation planner. Create a practical day-by-day itinerary.
-Use the traveler request, trip constraints, and any tool results provided.
-If a tool failed, continue with a useful plan and mention the gap in notes.
-Prefer indoor or flexible activities when weather looks poor.
-Keep each day's activities as concise strings that a traveler can follow.
+Do not write the final day-by-day itinerary yourself; another step will compose it with the existing travel planner.
 """
 
 
@@ -32,9 +22,11 @@ class PlanningGraph:
         self,
         model,
         tools: List[AgentTool],
+        llm_service: Optional[LLMService] = None,
         max_iterations: Optional[int] = None,
     ):
         self.model = model
+        self.llm_service = llm_service
         self.tools = {tool.name: tool for tool in tools}
         self.langchain_tools = [tool.as_langchain_tool() for tool in tools]
         self.max_iterations = max_iterations or settings.AGENT_MAX_TOOL_ITERATIONS
@@ -114,16 +106,21 @@ class PlanningGraph:
         }
 
     def compose(self, state: PlanningState) -> Dict[str, Any]:
-        prompt = self._compose_prompt(state)
-        messages = [
-            SystemMessage(content=COMPOSE_SYSTEM_PROMPT),
-            HumanMessage(content=prompt),
-        ]
-        itinerary = self._generate_itinerary(messages, state)
+        destination = state.get("destination") or "the destination"
+        days = int(state.get("days") or 1)
+        generator = self.llm_service or LLMService()
+        itinerary = generator.generate_itinerary(
+            destination=destination,
+            days=days,
+            budget=float(state.get("budget") or 0),
+            travel_style=state.get("trip_style") or "budget",
+            user_request=state.get("user_request"),
+            tool_context=json.dumps(state.get("tool_results") or [], default=str),
+        )
         return {
-            "summary": itinerary.summary,
-            "itinerary": [day.model_dump() for day in itinerary.days],
-            "warnings": list(state.get("warnings") or []) + itinerary.notes,
+            "summary": f"A {days}-day plan for {destination}",
+            "itinerary": itinerary,
+            "warnings": list(state.get("warnings") or []),
         }
 
     def invoke(self, state: PlanningState) -> PlanningState:
@@ -141,49 +138,6 @@ class PlanningGraph:
             parts.append(f"Trip style: {state.get('trip_style')}")
         return "\n".join(parts)
 
-    def _compose_prompt(self, state: PlanningState) -> str:
-        return (
-            f"Traveler request: {state.get('user_request')}\n"
-            f"Destination: {state.get('destination') or 'unknown'}\n"
-            f"Days: {state.get('days')}\n"
-            f"Budget: {state.get('budget')}\n"
-            f"Trip style: {state.get('trip_style')}\n"
-            f"Tool results: {json.dumps(state.get('tool_results') or [], default=str)}\n"
-            f"Warnings: {json.dumps(state.get('warnings') or [])}\n"
-            "Return a complete itinerary covering every requested day."
-        )
-
-    def _generate_itinerary(self, messages: List, state: PlanningState) -> GeneratedItinerary:
-        try:
-            structured = self.model.with_structured_output(GeneratedItinerary)
-            result = structured.invoke(messages)
-            if isinstance(result, GeneratedItinerary):
-                return result
-            if isinstance(result, dict):
-                return GeneratedItinerary.model_validate(result)
-        except Exception as exc:
-            logger.warning("Structured itinerary generation failed, falling back to JSON parse: %s", exc)
-
-        raw = self.model.invoke(messages)
-        content = getattr(raw, "content", None) or str(raw)
-        parsed = _extract_json(content)
-        if parsed:
-            try:
-                return GeneratedItinerary.model_validate(parsed)
-            except Exception:
-                pass
-
-        days = int(state.get("days") or 1)
-        destination = state.get("destination") or "the destination"
-        return GeneratedItinerary(
-            summary=f"A {days}-day plan for {destination}. Some live details were unavailable.",
-            days=[
-                {"day": index, "activities": [f"Explore {destination} — refine after live data is available"]}
-                for index in range(1, days + 1)
-            ],
-            notes=["The model did not return a structured itinerary; a fallback plan was generated."],
-        )
-
 
 def _parse_tool_payload(content: str) -> Dict[str, Any]:
     try:
@@ -195,27 +149,15 @@ def _parse_tool_payload(content: str) -> Dict[str, Any]:
     return {"success": False, "error": content}
 
 
-def _extract_json(content: str) -> Optional[dict]:
-    text = content.strip()
-    if text.startswith("```"):
-        text = text.strip("`")
-        if text.startswith("json"):
-            text = text[4:]
-        text = text.strip()
-    try:
-        payload = json.loads(text)
-        return payload if isinstance(payload, dict) else None
-    except json.JSONDecodeError:
-        start = text.find("{")
-        end = text.rfind("}")
-        if start >= 0 and end > start:
-            try:
-                payload = json.loads(text[start:end + 1])
-                return payload if isinstance(payload, dict) else None
-            except json.JSONDecodeError:
-                return None
-        return None
-
-
-def build_planning_graph(model, tools: List[AgentTool], max_iterations: Optional[int] = None) -> PlanningGraph:
-    return PlanningGraph(model=model, tools=tools, max_iterations=max_iterations)
+def build_planning_graph(
+    model,
+    tools: List[AgentTool],
+    llm_service: Optional[LLMService] = None,
+    max_iterations: Optional[int] = None,
+) -> PlanningGraph:
+    return PlanningGraph(
+        model=model,
+        tools=tools,
+        llm_service=llm_service,
+        max_iterations=max_iterations,
+    )
