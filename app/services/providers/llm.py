@@ -8,20 +8,15 @@ class LLMConfigurationError(Exception):
 
 
 def get_chat_model(temperature: Optional[float] = None):
-    provider = (settings.LLM_PROVIDER or "openai").lower()
-    if provider != "openai":
-        raise LLMConfigurationError(f"Unsupported LLM provider: {settings.LLM_PROVIDER}")
-    if not settings.LLM_API_KEY:
-        raise LLMConfigurationError("LLM_API_KEY is not configured")
+    """LangChain Claude client for tool-calling. Compose still uses app.llm.LLMService."""
+    if not settings.ANTHROPIC_API_KEY:
+        raise LLMConfigurationError("ANTHROPIC_API_KEY is not configured")
 
-    from langchain_openai import ChatOpenAI
+    from langchain_anthropic import ChatAnthropic
 
-    kwargs = {
-        "model": settings.LLM_MODEL,
-        "api_key": settings.LLM_API_KEY,
-        "temperature": settings.LLM_TEMPERATURE if temperature is None else temperature,
-        "max_retries": settings.LLM_MAX_RETRIES,
-    }
-    if settings.LLM_BASE_URL:
-        kwargs["base_url"] = settings.LLM_BASE_URL
-    return ChatOpenAI(**kwargs)
+    return ChatAnthropic(
+        model=settings.LLM_MODEL,
+        api_key=settings.ANTHROPIC_API_KEY,
+        temperature=settings.LLM_TEMPERATURE if temperature is None else temperature,
+        max_retries=settings.LLM_MAX_RETRIES,
+    )

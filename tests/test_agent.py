@@ -1,9 +1,8 @@
-import json
 from uuid import uuid4
 
 from langchain_core.messages import AIMessage
 
-from app.schemas.planning import GeneratedItinerary, PlanningRequest
+from app.schemas.planning import PlanningRequest
 from app.services.agents.graph import PlanningGraph
 from app.services.planning import PlanningService
 from app.services.tools.weather import WeatherTool
@@ -12,30 +11,30 @@ from app.services.rag.interfaces import RetrievedChunk
 
 
 class ScriptedModel:
-    def __init__(self, responses, structured=None):
+    def __init__(self, responses):
         self.responses = list(responses)
-        self.structured = structured
-        self.invoke_calls = 0
 
     def bind_tools(self, tools):
         return self
 
-    def with_structured_output(self, schema):
-        return _Structured(self.structured)
-
     def invoke(self, messages):
-        self.invoke_calls += 1
         if self.responses:
             return self.responses.pop(0)
         return AIMessage(content="")
 
 
-class _Structured:
-    def __init__(self, value):
-        self.value = value
+class FakeLLMService:
+    def __init__(self, days=None):
+        self.days = days or [{"day": 1, "activities": ["Musee d'Orsay", "Galerie Vivienne"]}]
+        self.calls = []
 
-    def invoke(self, messages):
-        return self.value
+    def generate_itinerary(self, destination, days, budget, travel_style, user_request=None, tool_context=None):
+        self.calls.append({
+            "destination": destination,
+            "user_request": user_request,
+            "tool_context": tool_context,
+        })
+        return self.days
 
 
 class FakeWeather:
@@ -60,11 +59,7 @@ class FakeKnowledgeService:
 
 
 def test_agent_selects_needed_tools_and_then_composes():
-    itinerary = GeneratedItinerary(
-        summary="A weather-aware Paris weekend",
-        days=[{"day": 1, "activities": ["Musee d'Orsay", "Galerie Vivienne"]}],
-        notes=[],
-    )
+    llm = FakeLLMService()
     model = ScriptedModel(
         responses=[
             AIMessage(
@@ -80,7 +75,6 @@ def test_agent_selects_needed_tools_and_then_composes():
             ),
             AIMessage(content="ready"),
         ],
-        structured=itinerary,
     )
     graph = PlanningGraph(
         model=model,
@@ -88,6 +82,7 @@ def test_agent_selects_needed_tools_and_then_composes():
             WeatherTool(provider=FakeWeather()),
             KnowledgeTool(FakeKnowledgeService()),
         ],
+        llm_service=llm,
         max_iterations=4,
     )
     result = graph.invoke({
@@ -107,19 +102,18 @@ def test_agent_selects_needed_tools_and_then_composes():
 
     assert set(result["tools_used"]) == {"get_weather", "search_travel_knowledge"}
     assert result["itinerary"][0]["activities"][0] == "Musee d'Orsay"
-    assert result["summary"].startswith("A weather-aware")
+    assert llm.calls
+    assert "get_weather" in (llm.calls[0]["tool_context"] or "")
     assert result["iteration"] == 2
 
 
 def test_agent_skips_tools_when_model_does_not_request_them():
-    itinerary = GeneratedItinerary(
-        summary="Simple plan",
-        days=[{"day": 1, "activities": ["Walk the Seine"]}],
-    )
-    model = ScriptedModel(responses=[AIMessage(content="no tools needed")], structured=itinerary)
+    llm = FakeLLMService(days=[{"day": 1, "activities": ["Walk the Seine"]}])
+    model = ScriptedModel(responses=[AIMessage(content="no tools needed")])
     graph = PlanningGraph(
         model=model,
         tools=[WeatherTool(provider=FakeWeather())],
+        llm_service=llm,
         max_iterations=3,
     )
     result = graph.invoke({
@@ -141,17 +135,12 @@ def test_agent_skips_tools_when_model_does_not_request_them():
 
 
 def test_agent_continues_when_a_tool_fails():
-    itinerary = GeneratedItinerary(
-        summary="Plan without live weather",
-        days=[{"day": 1, "activities": ["Indoor museum morning"]}],
-        notes=["Weather data was unavailable."],
-    )
-
     class BrokenWeather:
         def get_forecast(self, location, days):
             from app.services.providers.base import ProviderError
             raise ProviderError("weather", "weather API unavailable")
 
+    llm = FakeLLMService(days=[{"day": 1, "activities": ["Indoor museum morning"]}])
     model = ScriptedModel(
         responses=[
             AIMessage(
@@ -160,9 +149,13 @@ def test_agent_continues_when_a_tool_fails():
             ),
             AIMessage(content="done"),
         ],
-        structured=itinerary,
     )
-    graph = PlanningGraph(model=model, tools=[WeatherTool(provider=BrokenWeather())], max_iterations=4)
+    graph = PlanningGraph(
+        model=model,
+        tools=[WeatherTool(provider=BrokenWeather())],
+        llm_service=llm,
+        max_iterations=4,
+    )
     result = graph.invoke({
         "messages": [],
         "user_request": "Paris with weather-friendly ideas",
@@ -181,7 +174,7 @@ def test_agent_continues_when_a_tool_fails():
     assert any("get_weather failed" in warning for warning in result["warnings"])
 
 
-def test_planning_service_uses_existing_trip_and_can_skip_persist(db_session, monkeypatch):
+def test_planning_service_uses_existing_trip_and_can_skip_persist(db_session):
     from app.repositories.user import UserRepository
     from app.services.trip import TripService
     from app.schemas.trip import TripCreate
@@ -198,13 +191,10 @@ def test_planning_service_uses_existing_trip_and_can_skip_persist(db_session, mo
         TripCreate(destination="Paris", days=3, budget=1200, trip_style="budget"),
     )
 
-    itinerary = GeneratedItinerary(
-        summary="Saved plan",
-        days=[{"day": 1, "activities": ["Louvre"]}],
-    )
     graph = PlanningGraph(
-        model=ScriptedModel(responses=[AIMessage(content="ok")], structured=itinerary),
+        model=ScriptedModel(responses=[AIMessage(content="ok")]),
         tools=[],
+        llm_service=FakeLLMService(days=[{"day": 1, "activities": ["Louvre"]}]),
         max_iterations=2,
     )
     service = PlanningService(db_session, graph=graph)

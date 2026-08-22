@@ -5,7 +5,7 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
-   
+
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
@@ -13,11 +13,10 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DATABASE_POOL_SIZE: int = 10
 
-    LLM_PROVIDER: str = "openai"
-    LLM_MODEL: str = "gpt-4o-mini"
-    LLM_API_KEY: Optional[str] = None
-    LLM_BASE_URL: Optional[str] = None
-    LLM_TEMPERATURE: float = 0.3
+    ANTHROPIC_API_KEY: Optional[str] = None
+    LLM_MODEL: str = "claude-haiku-4-5"
+    LLM_TEMPERATURE: float = 0.7
+    LLM_MAX_TOKENS: int = 2000
     LLM_MAX_RETRIES: int = 2
 
     EMBEDDING_PROVIDER: str = "openai"
@@ -52,11 +51,12 @@ class Settings(BaseSettings):
     PRICING_API_URL: Optional[str] = None
     PRICING_API_KEY: Optional[str] = None
     PRICING_TIMEOUT: float = 10.0
-    
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
-        extra = "ignore" 
+        extra = "ignore"
+
 
 settings = Settings()

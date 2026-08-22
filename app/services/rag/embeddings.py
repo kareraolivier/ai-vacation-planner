@@ -18,7 +18,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         dimensions: Optional[int] = None,
         base_url: Optional[str] = None,
     ):
-        key = api_key or settings.EMBEDDING_API_KEY or settings.LLM_API_KEY
+        key = api_key or settings.EMBEDDING_API_KEY
         if not key:
             raise EmbeddingError("Embedding API key is not configured")
 

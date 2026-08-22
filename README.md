@@ -21,7 +21,8 @@ An intelligent vacation planning assistant backend API built with FastAPI. Users
 - **ORM**: SQLAlchemy 2
 - **Database**: PostgreSQL (or SQLite for development)
 - **Vector store**: Qdrant (in-memory store available for tests)
-- **LLM / embeddings**: OpenAI-compatible APIs via LangChain
+- **LLM**: Claude via the existing `app/llm` layer (Anthropic)
+- **Embeddings**: OpenAI-compatible models for RAG only
 - **Orchestration**: LangGraph
 - **Authentication**: JWT with bcrypt hashing
 - **Validation**: Pydantic 2
@@ -119,7 +120,8 @@ For unit tests, `VECTOR_STORE_PROVIDER=memory` uses cosine search in process.
 LangChain is used where it replaces code we would otherwise write ourselves:
 
 - `RecursiveCharacterTextSplitter` for chunking
-- `ChatOpenAI` / `OpenAIEmbeddings` behind provider factories
+- `ChatAnthropic` for tool selection (same Claude account as `LLMService`)
+- `OpenAIEmbeddings` only when `EMBEDDING_PROVIDER=openai`
 - `StructuredTool` so the agent sees names, descriptions, and input schemas
 
 LangGraph owns the planning workflow. The graph is a `StateGraph` with three nodes:
@@ -163,7 +165,8 @@ The agent does not call every tool on every request. If a provider is down, that
 - Python 3.10 or higher (3.11 recommended; LangChain 1.x requires 3.10+)
 - PostgreSQL (optional — SQLite works for development)
 - Qdrant if you use the default vector store
-- An OpenAI-compatible API key for live embeddings and planning
+- An Anthropic API key for itinerary generation and agent tool-calling
+- An OpenAI-compatible embedding key only if you ingest/search the knowledge base with `EMBEDDING_PROVIDER=openai`
 - pip
 
 ## Installation
@@ -238,15 +241,14 @@ The server starts at `http://localhost:8000`.
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Token lifetime |
 | `ENVIRONMENT` | `development` enables SQL echo |
 | `DATABASE_POOL_SIZE` | PostgreSQL pool size |
-| `LLM_PROVIDER` | LLM provider (`openai`) |
-| `LLM_MODEL` | Chat model name |
-| `LLM_API_KEY` | Chat API key |
-| `LLM_BASE_URL` | Optional OpenAI-compatible base URL |
+| `ANTHROPIC_API_KEY` | Claude API key used by `LLMService` and the agent |
+| `LLM_MODEL` | Claude model (default `claude-haiku-4-5`) |
 | `LLM_TEMPERATURE` | Sampling temperature |
+| `LLM_MAX_TOKENS` | Max tokens for itinerary generation |
 | `LLM_MAX_RETRIES` | Provider retries |
 | `EMBEDDING_PROVIDER` | `openai` or `hash` |
 | `EMBEDDING_MODEL` | Embedding model name |
-| `EMBEDDING_API_KEY` | Embedding key; falls back to `LLM_API_KEY` |
+| `EMBEDDING_API_KEY` | Embedding key |
 | `EMBEDDING_DIMENSIONS` | Vector size |
 | `VECTOR_STORE_PROVIDER` | `qdrant` or `memory` |
 | `QDRANT_URL` | Qdrant HTTP URL |
@@ -382,6 +384,7 @@ All new endpoints include request/response models, validation rules, and documen
 | ------ | ------------------------ | ---------------------------------- |
 | POST   | `/itineraries/`          | Create/update itinerary for a trip |
 | GET    | `/itineraries/{trip_id}` | Get itinerary for a trip           |
+| POST   | `/itineraries/{trip_id}/generate-ai` | Claude + optional tools/RAG, then save |
 
 ### Knowledge Base
 
@@ -453,7 +456,7 @@ curl -X POST "http://localhost:8000/trips/" \
 
 ### 4. Create an Itinerary
 
-Manual itineraries still use `POST /itineraries/`. AI-generated itineraries use `POST /planning/` and can write through that same itinerary service when `trip_id` is provided.
+Manual itineraries still use `POST /itineraries/`. AI generation uses the existing `POST /itineraries/{trip_id}/generate-ai` endpoint, which now runs the tool-using agent and then the original Claude itinerary composer. `POST /planning/` is the same planner with a richer response (`tools_used`, `warnings`) and does not require a trip.
 
 ### 5. Get All Trips
 
