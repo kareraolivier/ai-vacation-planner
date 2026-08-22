@@ -3,11 +3,11 @@ from uuid import uuid4
 from langchain_core.messages import AIMessage
 
 from app.schemas.planning import PlanningRequest
-from app.services.agents.graph import PlanningGraph
+from app.ai.agents.graph import PlanningGraph
 from app.services.planning import PlanningService
-from app.services.tools.weather import WeatherTool
-from app.services.tools.knowledge import KnowledgeTool
-from app.services.rag.interfaces import RetrievedChunk
+from app.ai.tools.weather import WeatherTool
+from app.ai.tools.knowledge import KnowledgeTool
+from app.ai.rag.interfaces import RetrievedChunk
 
 
 class ScriptedModel:
@@ -137,7 +137,7 @@ def test_agent_skips_tools_when_model_does_not_request_them():
 def test_agent_continues_when_a_tool_fails():
     class BrokenWeather:
         def get_forecast(self, location, days):
-            from app.services.providers.base import ProviderError
+            from app.ai.providers.base import ProviderError
             raise ProviderError("weather", "weather API unavailable")
 
     llm = FakeLLMService(days=[{"day": 1, "activities": ["Indoor museum morning"]}])

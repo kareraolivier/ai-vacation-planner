@@ -8,7 +8,7 @@ class LLMConfigurationError(Exception):
 
 
 def get_chat_model(temperature: Optional[float] = None):
-    """LangChain Claude client for tool-calling. Compose still uses app.llm.LLMService."""
+    """LangChain Claude client for tool-calling. Compose still uses app.ai.llm.LLMService."""
     if not settings.ANTHROPIC_API_KEY:
         raise LLMConfigurationError("ANTHROPIC_API_KEY is not configured")
 

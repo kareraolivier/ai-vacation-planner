@@ -1,8 +1,8 @@
 import pytest
 
-from app.services.rag.chunker import TextChunker
-from app.services.rag.interfaces import LoadedDocument
-from app.services.rag.loader import DocumentLoader
+from app.ai.rag.chunker import TextChunker
+from app.ai.rag.interfaces import LoadedDocument
+from app.ai.rag.loader import DocumentLoader
 
 
 def test_chunker_splits_long_document_with_overlap():

@@ -8,12 +8,12 @@ from sqlalchemy.orm import Session
 from ..core.config import settings
 from ..repositories.knowledge import KnowledgeRepository
 from ..schemas.knowledge import KnowledgeDocumentCreate
-from .rag.chunker import TextChunker
-from .rag.embeddings import EmbeddingProvider, get_embedding_provider
-from .rag.interfaces import EmbeddedChunk, LoadedDocument, RetrievedChunk, VectorStore
-from .rag.loader import DocumentLoader
-from .rag.retriever import RetrievalError, SemanticRetriever
-from .rag.vector_store import VectorStoreError, get_vector_store
+from ..ai.rag.chunker import TextChunker
+from ..ai.rag.embeddings import EmbeddingProvider, get_embedding_provider
+from ..ai.rag.interfaces import EmbeddedChunk, LoadedDocument, RetrievedChunk, VectorStore
+from ..ai.rag.loader import DocumentLoader
+from ..ai.rag.retriever import RetrievalError, SemanticRetriever
+from ..ai.rag.vector_store import VectorStoreError, get_vector_store
 
 logger = logging.getLogger(__name__)
 

@@ -2,9 +2,9 @@ from uuid import uuid4
 
 import pytest
 
-from app.services.rag.embeddings import HashEmbeddingProvider
-from app.services.rag.interfaces import EmbeddedChunk
-from app.services.rag.vector_store import InMemoryVectorStore, VectorStoreError, get_vector_store
+from app.ai.rag.embeddings import HashEmbeddingProvider
+from app.ai.rag.interfaces import EmbeddedChunk
+from app.ai.rag.vector_store import InMemoryVectorStore, VectorStoreError, get_vector_store
 
 
 def _chunk(text, index, document_id, destination="Paris"):
@@ -65,7 +65,7 @@ def test_vector_store_factory_uses_memory_in_tests():
 
 
 def test_qdrant_error_is_wrapped(monkeypatch):
-    from app.services.rag.vector_store import QdrantVectorStore
+    from app.ai.rag.vector_store import QdrantVectorStore
 
     class Boom:
         def __init__(self, *args, **kwargs):

@@ -3,10 +3,10 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from app.services.providers.base import ProviderError
-from app.services.tools.maps import MapsTool, MapsToolInput
-from app.services.tools.pricing import PricingTool, PricingToolInput
-from app.services.tools.weather import WeatherTool, WeatherToolInput
+from app.ai.providers.base import ProviderError
+from app.ai.tools.maps import MapsTool, MapsToolInput
+from app.ai.tools.pricing import PricingTool, PricingToolInput
+from app.ai.tools.weather import WeatherTool, WeatherToolInput
 
 
 class FakeWeather:

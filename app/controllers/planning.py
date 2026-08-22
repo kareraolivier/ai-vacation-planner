@@ -8,8 +8,8 @@ from ..core.dependencies import get_current_user
 from ..models.user import User
 from ..schemas.planning import PlanningErrorResponse, PlanningRequest, PlanningResponse
 from ..services.planning import PlanningService
-from ..services.rag.embeddings import EmbeddingError
-from ..services.rag.vector_store import VectorStoreError
+from ..ai.rag.embeddings import EmbeddingError
+from ..ai.rag.vector_store import VectorStoreError
 
 router = APIRouter(prefix="/planning", tags=["AI Planning"])
 
