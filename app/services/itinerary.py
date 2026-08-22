@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 
-from app.llm.itinerary_generator import LLMService
+from app.ai.llm.itinerary_generator import LLMService
 from ..repositories.itinerary import ItineraryRepository
 from ..repositories.trip import TripRepository
 from ..schemas.itinerary import ItineraryCreate

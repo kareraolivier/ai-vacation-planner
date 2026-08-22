@@ -23,7 +23,7 @@ class FakeKnowledgeService:
         }
 
     def search(self, query, destination=None, top_k=None):
-        from app.services.rag.interfaces import RetrievedChunk
+        from app.ai.rag.interfaces import RetrievedChunk
 
         return [
             RetrievedChunk(

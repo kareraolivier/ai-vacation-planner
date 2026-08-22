@@ -17,7 +17,7 @@ from app.core.database import SessionLocal, engine, Base
 from app.models.knowledge import KnowledgeDocument  # noqa: F401
 from app.schemas.knowledge import KnowledgeDocumentCreate
 from app.services.knowledge import KnowledgeService
-from app.services.rag.loader import DocumentLoader
+from app.ai.rag.loader import DocumentLoader
 
 KNOWLEDGE_DIR = ROOT / "data" / "knowledge"
 

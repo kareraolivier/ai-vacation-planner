@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.rag.embeddings import EmbeddingError, HashEmbeddingProvider, get_embedding_provider
+from app.ai.rag.embeddings import EmbeddingError, HashEmbeddingProvider, get_embedding_provider
 from app.core import config as config_module
 
 

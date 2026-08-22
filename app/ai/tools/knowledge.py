@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from ..knowledge import KnowledgeService
+from ...services.knowledge import KnowledgeService
 from ..rag.retriever import RetrievalError
 from .base import AgentTool, ToolResult
 

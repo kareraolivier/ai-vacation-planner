@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, START, StateGraph
 
 from ...core.config import settings
-from ...llm.itinerary_generator import LLMService
+from ..llm.itinerary_generator import LLMService
 from ..tools.base import AgentTool
 from .state import PlanningState
 

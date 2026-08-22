@@ -3,8 +3,8 @@ from typing import List, Dict, Any, Optional
 import anthropic
 
 from app.core.config import settings
-from app.llm.itenerary_prompt import PromptBuilder
-from app.llm.response_parser import (
+from app.ai.llm.itenerary_prompt import PromptBuilder
+from app.ai.llm.response_parser import (
     ResponseParser,
     FallbackItinerary
 )

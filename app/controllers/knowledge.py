@@ -16,9 +16,9 @@ from ..schemas.knowledge import (
     KnowledgeSearchResponse,
 )
 from ..services.knowledge import KnowledgeService
-from ..services.rag.embeddings import EmbeddingError
-from ..services.rag.retriever import RetrievalError
-from ..services.rag.vector_store import VectorStoreError
+from ..ai.rag.embeddings import EmbeddingError
+from ..ai.rag.retriever import RetrievalError
+from ..ai.rag.vector_store import VectorStoreError
 
 router = APIRouter(prefix="/knowledge", tags=["Knowledge Base"])
 

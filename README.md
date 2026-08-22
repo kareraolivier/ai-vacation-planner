@@ -21,7 +21,7 @@ An intelligent vacation planning assistant backend API built with FastAPI. Users
 - **ORM**: SQLAlchemy 2
 - **Database**: PostgreSQL (or SQLite for development)
 - **Vector store**: Qdrant (in-memory store available for tests)
-- **LLM**: Claude via the existing `app/llm` layer (Anthropic)
+- **LLM**: Claude via `app/ai/llm` (Anthropic)
 - **Embeddings**: OpenAI-compatible models for RAG only
 - **Orchestration**: LangGraph
 - **Authentication**: JWT with bcrypt hashing
@@ -30,7 +30,7 @@ An intelligent vacation planning assistant backend API built with FastAPI. Users
 
 ## Architecture
 
-The project still uses the original layered flow. RAG and agents were added inside `app/services/` rather than as a second application.
+The project still uses the original layered flow. AI capabilities live under `app/ai/`; `app/services/` stays use-case orchestration.
 
 ```
 Controllers (HTTP layer)
@@ -505,16 +505,18 @@ ai-vacation-planner/
 │   ├── models/
 │   ├── schemas/
 │   ├── repositories/
-│   ├── services/
+│   ├── services/               # use cases only
 │   │   ├── auth.py
 │   │   ├── trip.py
 │   │   ├── itinerary.py
 │   │   ├── knowledge.py
-│   │   ├── planning.py
-│   │   ├── rag/              # loader, chunker, embeddings, vector store, retriever
-│   │   ├── providers/        # weather, maps, pricing, LLM
-│   │   ├── tools/            # agent-facing tool wrappers
-│   │   └── agents/           # LangGraph state and graph
+│   │   └── planning.py
+│   ├── ai/                     # Claude, RAG, tools, agent
+│   │   ├── llm/
+│   │   ├── rag/
+│   │   ├── providers/
+│   │   ├── tools/
+│   │   └── agents/
 │   └── controllers/
 ├── data/knowledge/           # sample travel guides
 ├── scripts/seed_knowledge.py

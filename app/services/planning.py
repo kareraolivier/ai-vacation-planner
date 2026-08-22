@@ -5,12 +5,12 @@ from sqlalchemy.orm import Session
 
 from ..schemas.itinerary import DayActivity, ItineraryCreate
 from ..schemas.planning import PlanningRequest
-from .agents.graph import PlanningGraph, build_planning_graph
-from .agents.state import PlanningState
-from ..llm.itinerary_generator import LLMService
+from ..ai.agents.graph import PlanningGraph, build_planning_graph
+from ..ai.agents.state import PlanningState
+from ..ai.llm.itinerary_generator import LLMService
 from .itinerary import ItineraryService
-from .providers.llm import LLMConfigurationError, get_chat_model
-from .tools.registry import ToolRegistry
+from ..ai.providers.llm import LLMConfigurationError, get_chat_model
+from ..ai.tools.registry import ToolRegistry
 from .knowledge import KnowledgeService
 from .trip import TripService
 

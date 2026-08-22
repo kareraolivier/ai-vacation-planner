@@ -4,16 +4,16 @@ import pytest
 
 from app.schemas.knowledge import KnowledgeDocumentCreate
 from app.services.knowledge import KnowledgeService
-from app.services.rag.embeddings import EmbeddingError, HashEmbeddingProvider
-from app.services.rag.retriever import RetrievalError, SemanticRetriever
-from app.services.rag.vector_store import InMemoryVectorStore
+from app.ai.rag.embeddings import EmbeddingError, HashEmbeddingProvider
+from app.ai.rag.retriever import RetrievalError, SemanticRetriever
+from app.ai.rag.vector_store import InMemoryVectorStore
 
 
 def test_retriever_returns_relevant_chunk():
     store = InMemoryVectorStore()
     embeddings = HashEmbeddingProvider(dimensions=32)
     retriever = SemanticRetriever(embeddings, store)
-    from app.services.rag.interfaces import EmbeddedChunk
+    from app.ai.rag.interfaces import EmbeddedChunk
 
     document_id = str(uuid4())
     store.upsert([

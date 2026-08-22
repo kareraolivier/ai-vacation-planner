@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 
 from langchain_core.tools import BaseTool
 
-from ..knowledge import KnowledgeService
+from ...services.knowledge import KnowledgeService
 from ..providers.base import MapsProvider, PricingProvider, WeatherProvider
 from .base import AgentTool
 from .knowledge import KnowledgeTool
