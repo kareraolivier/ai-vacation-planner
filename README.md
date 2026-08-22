@@ -110,7 +110,7 @@ ranked chunks for API clients or the knowledge tool
 Qdrant is the default production store because this project already uses a relational database for application data and had no vector engine. The `VectorStore` interface keeps Qdrant out of controllers and services.
 
 ```bash
-docker compose up -d qdrant
+docker compose up -d
 ```
 
 For unit tests, `VECTOR_STORE_PROVIDER=memory` uses cosine search in process.
@@ -160,11 +160,55 @@ Open-Meteo, Nominatim, configured pricing HTTP API, or vector retrieval
 
 The agent does not call every tool on every request. If a provider is down, that tool returns a structured failure and planning continues.
 
+## How to learn this project
+
+Study one request through the layers. If you can narrate *“Plan my Paris trip and include weather-friendly activities”* from HTTP to Claude and back, you understand the system.
+
+### Read in this order
+
+1. `app/main.py` — routers
+2. `app/core/dependencies.py` — JWT
+3. `app/controllers/trip.py` + `app/services/trip.py` — simplest CRUD
+4. `app/controllers/itinerary.py` — `generate-ai` is the product AI entry
+5. `app/services/planning.py` — loads the trip, runs the graph, persists
+6. `app/ai/agents/graph.py` — `reason` → `tools` → `compose`
+7. `app/ai/tools/` + `app/ai/providers/` — agent never does HTTP itself
+8. `app/services/knowledge.py` + `app/ai/rag/` — ingest and search
+9. `app/ai/llm/` — existing Claude composer and JSON parser
+
+`app/services/` is use cases. `app/ai/` is capabilities those use cases call.
+
+### The path you should be able to draw
+
+```
+POST /itineraries/{trip_id}/generate-ai
+    → PlanningService (load trip)
+    → LangGraph
+         reason  = Claude + bind_tools (should I call weather / RAG / maps / pricing?)
+         tools   = only the tools the model requested; failures become warnings
+         compose = existing LLMService + PromptBuilder + ResponseParser
+    → ItineraryService.create_itinerary
+    → { trip_id, itinerary, message }
+```
+
+`POST /planning/` is the same planner with `tools_used` and `warnings`. It does not require a trip.
+
+### Why there are two Claude calls
+
+- **Reason:** `ChatAnthropic` decides tools.
+- **Compose:** `LLMService` writes the day-by-day JSON using the original prompts.
+
+### How to practice
+
+1. Draw `START → reason ⇄ tools → compose` on paper.
+2. Read `tests/test_agent.py` (tool pick, skip tools, tool failure).
+3. Trace `KnowledgeService.ingest_document` (hash, chunk, embed, Qdrant).
+4. Open http://localhost:8000/docs and explain `generate-ai` vs `/knowledge/search` vs `/planning/`.
+
 ## Prerequisites
 
 - Python 3.10 or higher (3.11 recommended; LangChain 1.x requires 3.10+)
-- PostgreSQL (optional — SQLite works for development)
-- Qdrant if you use the default vector store
+- Docker Desktop (Postgres and Qdrant run in Compose; no local Postgres install needed)
 - An Anthropic API key for itinerary generation and agent tool-calling
 - An OpenAI-compatible embedding key only if you ingest/search the knowledge base with `EMBEDDING_PROVIDER=openai`
 - pip
@@ -205,23 +249,24 @@ cp .env.example .env
 
 See [Environment variables](#environment-variables) below.
 
-### 5. Database and Qdrant
+### 5. Postgres and Qdrant (Docker)
 
-PostgreSQL:
-
-```bash
-createdb vacation_planner
-```
-
-SQLite: set `DATABASE_URL=sqlite:///./vacation_planner.db`.
-
-Qdrant:
+Do not use a local Postgres install. Compose publishes Postgres on **host port 5433** so it does not collide with anything already bound to 5432. Qdrant stays on 6333.
 
 ```bash
-docker compose up -d qdrant
+docker compose up -d
+docker compose ps
 ```
 
-Tables are created on startup via SQLAlchemy `create_all`.
+`.env.example` already points at this database:
+
+```env
+DATABASE_URL=postgresql://vacation:vacation@localhost:5433/vacation_planner
+```
+
+SQLite is still available if you do not want Docker for the database: `DATABASE_URL=sqlite:///./vacation_planner.db`. You still need Compose for Qdrant unless you set `VECTOR_STORE_PROVIDER=memory`.
+
+Tables are created on API startup via SQLAlchemy `create_all`.
 
 ### 6. Run the Application
 
@@ -521,7 +566,7 @@ ai-vacation-planner/
 ├── data/knowledge/           # sample travel guides
 ├── scripts/seed_knowledge.py
 ├── tests/
-├── docker-compose.yml        # local Qdrant
+├── docker-compose.yml        # Postgres (host 5433) + Qdrant (6333)
 ├── .env.example
 ├── requirements.txt
 └── README.md
@@ -530,22 +575,22 @@ ai-vacation-planner/
 ### Database Management
 
 ```bash
-# Reset database (PostgreSQL)
-psql -c "DROP DATABASE IF EXISTS vacation_planner;"
-psql -c "CREATE DATABASE vacation_planner;"
+# Reset Compose Postgres (destroys local Docker volume data)
+docker compose down -v
+docker compose up -d
 
-# Reset database (SQLite)
+# Reset SQLite
 rm vacation_planner.db
 ```
 
 ### View Database Contents
 
 ```bash
-# PostgreSQL
-psql -d vacation_planner -c "SELECT * FROM users;"
-psql -d vacation_planner -c "SELECT * FROM trips;"
-psql -d vacation_planner -c "SELECT * FROM itineraries;"
-psql -d vacation_planner -c "SELECT * FROM knowledge_documents;"
+# Compose Postgres (port 5433)
+docker compose exec postgres psql -U vacation -d vacation_planner -c "SELECT * FROM users;"
+docker compose exec postgres psql -U vacation -d vacation_planner -c "SELECT * FROM trips;"
+docker compose exec postgres psql -U vacation -d vacation_planner -c "SELECT * FROM itineraries;"
+docker compose exec postgres psql -U vacation -d vacation_planner -c "SELECT * FROM knowledge_documents;"
 
 # SQLite
 sqlite3 vacation_planner.db "SELECT * FROM users;"
