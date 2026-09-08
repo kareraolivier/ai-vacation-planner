@@ -108,6 +108,7 @@ ipython_config.py
 # poetry.lock
 # poetry.toml
 
+temp_auto_push.bat
 # pdm
 #   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
 #   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
@@ -203,7 +204,6 @@ cython_debug/
 #   that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
 #   and can be added to the global gitignore or merged into this file. However, if you prefer, 
 #   you could uncomment the following to ignore the entire vscode folder
-# .vscode/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
@@ -220,3 +220,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+branch_structure.json
