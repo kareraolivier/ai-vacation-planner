@@ -4,9 +4,7 @@ from ..core.database import get_db
 from ..core.dependencies import get_current_user
 from ..models.user import User
 from ..services.itinerary import ItineraryService
-from ..services.planning import PlanningService
 from ..schemas.itinerary import GenerateAIRequest, ItineraryCreate, ItineraryOutput
-from ..schemas.planning import PlanningRequest
 from typing import cast
 from uuid import UUID
 
@@ -55,7 +53,7 @@ def get_trip_itinerary(
     "/{trip_id}/generate-ai",
     response_model=ItineraryOutput,
     status_code=status.HTTP_201_CREATED,
-    summary="Generate an itinerary with the existing Claude planner plus tools/RAG when needed",
+    summary="Generate an itinerary with Claude, using retrieved travel knowledge when available",
 )
 def generate_ai_itinerary(
     trip_id: UUID,
@@ -66,14 +64,7 @@ def generate_ai_itinerary(
     user_id: UUID = cast(UUID, current_user.id)
     extra = request.message or "Plan this trip."
     try:
-        result = PlanningService(db).plan_trip(
-            user_id,
-            PlanningRequest(
-                message=extra,
-                trip_id=trip_id,
-                persist_itinerary=True,
-            ),
-        )
+        result = ItineraryService(db).generate_ai_itinerary(user_id, trip_id, extra)
     except ValueError as exc:
         status_code = status.HTTP_404_NOT_FOUND if str(exc) == "Trip not found" else status.HTTP_400_BAD_REQUEST
         raise HTTPException(status_code=status_code, detail=str(exc))
