@@ -11,7 +11,7 @@ from app.ai.llm.response_parser import (
 
 
 class LLMService:
-    """Claude itinerary generator used by both direct AI generation and the agent compose step."""
+    """Claude itinerary generator used by generate-ai, with optional retrieved knowledge context."""
 
     def __init__(self):
 

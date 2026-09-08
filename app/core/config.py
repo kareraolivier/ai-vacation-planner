@@ -33,24 +33,6 @@ class Settings(BaseSettings):
     RAG_CHUNK_SIZE: int = 800
     RAG_CHUNK_OVERLAP: int = 120
     RAG_TOP_K: int = 5
-    AGENT_MAX_TOOL_ITERATIONS: int = 6
-
-    WEATHER_PROVIDER: str = "openmeteo"
-    WEATHER_API_URL: str = "https://api.open-meteo.com/v1"
-    WEATHER_GEOCODE_URL: str = "https://geocoding-api.open-meteo.com/v1"
-    WEATHER_API_KEY: Optional[str] = None
-    WEATHER_TIMEOUT: float = 10.0
-
-    MAPS_PROVIDER: str = "nominatim"
-    MAPS_API_URL: str = "https://nominatim.openstreetmap.org"
-    MAPS_API_KEY: Optional[str] = None
-    MAPS_USER_AGENT: str = "ai-vacation-planner/1.0"
-    MAPS_TIMEOUT: float = 10.0
-
-    PRICING_PROVIDER: str = "http"
-    PRICING_API_URL: Optional[str] = None
-    PRICING_API_KEY: Optional[str] = None
-    PRICING_TIMEOUT: float = 10.0
 
     class Config:
         env_file = ".env"

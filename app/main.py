@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .core.database import engine, Base
-from .controllers import auth, trip, itinerary, knowledge, planning
+from .controllers import auth, trip, itinerary, knowledge
 
 Base.metadata.create_all(bind=engine)
 
@@ -9,8 +9,8 @@ app = FastAPI(
     title="AI Vacation Planner API",
     description=(
         "Backend API for trip planning. Users can manage trips and itineraries, "
-        "ingest travel knowledge for RAG, and generate itineraries through a "
-        "LangGraph agent that selectively uses weather, maps, pricing, and knowledge tools."
+        "ingest travel knowledge for RAG, and generate itineraries with Claude "
+        "using retrieved destination context."
     ),
     version="1.1.0",
     openapi_tags=[
@@ -18,7 +18,6 @@ app = FastAPI(
         {"name": "Trips", "description": "Create and manage trips"},
         {"name": "Itineraries", "description": "Manually create and retrieve itineraries"},
         {"name": "Knowledge Base", "description": "Ingest, re-index, and search travel knowledge"},
-        {"name": "AI Planning", "description": "Tool-using agent for vacation planning"},
     ],
 )
 
@@ -36,7 +35,6 @@ app.include_router(auth.router)
 app.include_router(trip.router)
 app.include_router(itinerary.router)
 app.include_router(knowledge.router)
-app.include_router(planning.router)
 
 @app.get("/")
 def root():

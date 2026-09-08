@@ -8,7 +8,6 @@ os.environ.setdefault("EMBEDDING_PROVIDER", "hash")
 os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
 os.environ.setdefault("LLM_MODEL", "claude-haiku-4-5")
 os.environ.setdefault("QDRANT_URL", "http://localhost:6333")
-os.environ.setdefault("PRICING_API_URL", "")
 
 import pytest
 from sqlalchemy import create_engine
