@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 
 class PromptBuilder:
@@ -30,12 +30,23 @@ RULES:
         destination: str,
         days: int,
         budget: float,
-        travel_style: str
+        travel_style: str,
+        user_request: Optional[str] = None,
+        tool_context: Optional[str] = None,
     ) -> str:
 
         budget_guidelines = PromptBuilder._get_budget_guidelines(
             travel_style
         )
+        extra = ""
+        if user_request:
+            extra += f"\nTRAVELER REQUEST:\n{user_request}\n"
+        if tool_context:
+            extra += (
+                "\nRETRIEVED TRAVEL KNOWLEDGE:\n"
+                f"{tool_context}\n"
+                "Use this information when it is relevant.\n"
+            )
 
         return f"""
 Create a {days}-day itinerary for {destination}.
@@ -45,7 +56,7 @@ TRIP DETAILS:
 - Duration: {days} days
 - Budget: ${budget:.2f}
 - Style: {travel_style}
-
+{extra}
 BUDGET GUIDELINES:
 {budget_guidelines}
 
