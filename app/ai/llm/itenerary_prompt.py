@@ -43,9 +43,11 @@ RULES:
             extra += f"\nTRAVELER REQUEST:\n{user_request}\n"
         if tool_context:
             extra += (
-                "\nRETRIEVED TRAVEL KNOWLEDGE:\n"
+                "\nLIVE CONTEXT FROM TOOLS:\n"
                 f"{tool_context}\n"
-                "Use this information when it is relevant.\n"
+                "Use this information when it is relevant. "
+                "If weather looks poor, prefer indoor or flexible activities. "
+                "If a tool failed, continue with a useful plan.\n"
             )
 
         return f"""
