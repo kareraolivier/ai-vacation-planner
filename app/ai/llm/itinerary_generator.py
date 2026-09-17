@@ -1,17 +1,17 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 import anthropic
 
 from app.core.config import settings
-from app.llm.itenerary_prompt import PromptBuilder
-from app.llm.response_parser import (
+from app.ai.llm.itenerary_prompt import PromptBuilder
+from app.ai.llm.response_parser import (
     ResponseParser,
     FallbackItinerary
 )
 
 
 class LLMService:
-    """Claude itinerary generator"""
+    """Claude itinerary generator used by generate-ai, with optional retrieved knowledge context."""
 
     def __init__(self):
 
@@ -24,7 +24,7 @@ class LLMService:
             api_key=settings.ANTHROPIC_API_KEY
         )
 
-        self.model = "claude-haiku-4-5"
+        self.model = settings.LLM_MODEL
         self.prompt_builder = PromptBuilder()
         self.parser = ResponseParser()
         self.fallback = FallbackItinerary()
@@ -34,14 +34,16 @@ class LLMService:
         destination: str,
         days: int,
         budget: float,
-        travel_style: str
+        travel_style: str,
+        user_request: Optional[str] = None,
+        tool_context: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
 
         try:
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=2000,
-                temperature=0.7,
+                max_tokens=settings.LLM_MAX_TOKENS,
+                temperature=settings.LLM_TEMPERATURE,
                 system=self.prompt_builder.system_prompt(),
                 messages=[
                     {
@@ -50,7 +52,9 @@ class LLMService:
                             destination=destination,
                             days=days,
                             budget=budget,
-                            travel_style=travel_style
+                            travel_style=travel_style,
+                            user_request=user_request,
+                            tool_context=tool_context,
                         )
                     }
                 ]
