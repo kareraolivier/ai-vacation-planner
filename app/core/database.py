@@ -4,11 +4,13 @@ from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
 from .config import settings
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    echo=settings.ENVIRONMENT == "development"
-)
+_engine_kwargs = {"echo": settings.ENVIRONMENT == "development"}
+if settings.DATABASE_URL.startswith("sqlite"):
+    _engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    _engine_kwargs["pool_size"] = settings.DATABASE_POOL_SIZE
+
+engine = create_engine(settings.DATABASE_URL, **_engine_kwargs)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

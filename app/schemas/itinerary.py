@@ -29,3 +29,11 @@ class ItineraryOutput(BaseModel):
     trip_id: UUID
     itinerary: List[Dict[str, Any]]
     message: str
+
+
+class GenerateAIRequest(BaseModel):
+    message: Optional[str] = Field(
+        None,
+        max_length=4000,
+        description="Optional extra request, e.g. include weather-friendly activities",
+    )

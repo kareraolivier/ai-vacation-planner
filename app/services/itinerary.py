@@ -1,18 +1,25 @@
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 
-from app.llm.itinerary_generator import LLMService
+from app.ai.llm.itinerary_generator import LLMService
 from ..repositories.itinerary import ItineraryRepository
 from ..repositories.trip import TripRepository
 from ..schemas.itinerary import ItineraryCreate
+from .knowledge import KnowledgeService
 from uuid import UUID
 
 
 class ItineraryService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, llm_service: Optional[LLMService] = None):
         self.itinerary_repo = ItineraryRepository(db)
         self.trip_repo = TripRepository(db)
-        self.llm_service = LLMService()
+        self._llm_service = llm_service
+
+    @property
+    def llm_service(self) -> LLMService:
+        if self._llm_service is None:
+            self._llm_service = LLMService()
+        return self._llm_service
 
     def create_itinerary(self, user_id: UUID, itinerary_data: ItineraryCreate, use_ai: bool = False) -> Optional[dict]:
 
@@ -62,4 +69,35 @@ class ItineraryService:
             "itinerary": itinerary.days,
             "created_at": itinerary.created_at,
             "updated_at": itinerary.updated_at
+        }
+
+    def generate_ai_itinerary(self, user_id: UUID, trip_id: UUID, message: str) -> dict:
+        trip = self.trip_repo.get_user_trip(trip_id, user_id)
+        if not trip:
+            raise ValueError("Trip not found")
+
+        extra = message or "Plan this trip."
+        context = ""
+        try:
+            context = KnowledgeService(self.itinerary_repo.db).retrieve_context(
+                query=extra,
+                destination=str(trip.destination),
+            )
+        except Exception:
+            context = ""
+
+        days_list = self.llm_service.generate_itinerary(
+            destination=str(trip.destination),
+            days=int(trip.days),  # type: ignore
+            budget=float(trip.budget),  # type: ignore
+            travel_style=str(trip.trip_style),
+            user_request=extra,
+            tool_context=context or None,
+        )
+
+        itinerary = self.itinerary_repo.upsert_itinerary(trip_id=trip_id, days=days_list)
+        return {
+            "trip_id": itinerary.trip_id,
+            "itinerary": itinerary.days,
+            "message": "Itinerary AI-generated successfully",
         }
