@@ -2,7 +2,7 @@
 
 ## Overview
 
-An intelligent vacation planning assistant backend API built with FastAPI. Users can register, manage trips and itineraries, ingest travel knowledge, and generate itineraries with Claude using retrieved destination context.
+An intelligent vacation planning assistant backend API built with FastAPI. Users can register, manage trips and itineraries, ingest travel knowledge, and ask an agent to generate itineraries using weather, maps, pricing, and RAG tools.
 
 ## Features
 
@@ -10,9 +10,9 @@ An intelligent vacation planning assistant backend API built with FastAPI. Users
 - **Trip Management**: Create, read, update, and delete trips
 - **Itinerary Planning**: Store day-by-day activities for each trip
 - **Travel Knowledge Base**: Ingest, chunk, embed, and semantically search travel documents
-- **RAG-backed itineraries**: Claude generates day-by-day plans using retrieved knowledge when available
+- **Tool-using planner**: LangGraph agent that calls only the tools a request needs
 - **UUID Support**: Secure, non-sequential IDs for all entities
-- **Production-Ready Architecture**: Controller-Service-Repository, with provider abstractions for LLM, embeddings, and vector storage
+- **Production-Ready Architecture**: Controller-Service-Repository, with provider abstractions for LLM, embeddings, vector storage, and external APIs
 - **API Documentation**: Automatic Swagger UI and ReDoc endpoints
 
 ## Tech Stack
@@ -23,6 +23,7 @@ An intelligent vacation planning assistant backend API built with FastAPI. Users
 - **Vector store**: Qdrant (in-memory store available for tests)
 - **LLM**: Claude via `app/ai/llm` (Anthropic)
 - **Embeddings**: OpenAI-compatible models for RAG only
+- **Orchestration**: LangGraph
 - **Authentication**: JWT with bcrypt hashing
 - **Validation**: Pydantic 2
 - **Server**: Uvicorn
@@ -34,7 +35,7 @@ The project still uses the original layered flow. AI capabilities live under `ap
 ```
 Controllers (HTTP layer)
     ↓
-Services (Business logic, RAG, itinerary generation)
+Services (Business logic, RAG, tools, agent)
     ↓
 Repositories (Data access)
     ↓
@@ -42,19 +43,23 @@ Models (Database schema)
 ```
 
 ```
-POST /itineraries/{trip_id}/generate-ai
+User request
     ↓
-ItineraryService
+PlanningService
     ↓
-KnowledgeService.retrieve_context (optional RAG)
+LangGraph agent
     ↓
-LLMService (Claude)
+Tool interface (weather / maps / pricing / knowledge)
     ↓
-Persist via existing itinerary repository
+Provider or KnowledgeService
+    ↓
+Compose itinerary with the LLM
+    ↓
+Optional persist via existing ItineraryService
 ```
 
 - **Controllers**: HTTP, validation, authentication
-- **Services**: Business logic and RAG pipeline
+- **Services**: Business logic, RAG pipeline, tool orchestration
 - **Repositories**: Database operations
 - **Models**: SQLAlchemy tables
 - **Schemas**: Pydantic request/response models
@@ -86,7 +91,7 @@ vector similarity search
     ↓
 optional destination filter
     ↓
-ranked chunks for API clients or generate-ai
+ranked chunks for API clients or the knowledge tool
 ```
 
 - **Document metadata** (title, source, category, destination, full source text, content hash, chunk count) lives in the existing relational database.
@@ -110,16 +115,109 @@ docker compose up -d
 
 For unit tests, `VECTOR_STORE_PROVIDER=memory` uses cosine search in process.
 
-### LangChain
+### LangChain and LangGraph
 
 LangChain is used where it replaces code we would otherwise write ourselves:
 
 - `RecursiveCharacterTextSplitter` for chunking
+- `ChatAnthropic` for tool selection (same Claude account as `LLMService`)
 - `OpenAIEmbeddings` only when `EMBEDDING_PROVIDER=openai`
+- `StructuredTool` so the agent sees names, descriptions, and input schemas
+
+LangGraph owns the planning workflow. The graph is a `StateGraph` with three nodes:
+
+1. **reason** — tool-calling model decides whether weather, maps, pricing, or knowledge is needed
+2. **tools** — executes only the requested tools; provider errors become warnings
+3. **compose** — second LLM call builds the day-by-day itinerary from trip constraints plus tool results
+
+```
+START → reason ─┬─(tool calls)→ tools → reason
+                └─(done / max iterations)→ compose → END
+```
+
+Additional tools can be registered in `ToolRegistry` without changing the graph.
+
+### Agent and tools
+
+```
+Agent
+  ↓
+Tool interface (AgentTool)
+  ↓
+WeatherTool / MapsTool / PricingTool / KnowledgeTool
+  ↓
+WeatherService-style provider / KnowledgeService
+  ↓
+Open-Meteo, Nominatim, configured pricing HTTP API, or vector retrieval
+```
+
+| Tool | Name | When the agent should use it |
+| --- | --- | --- |
+| Weather | `get_weather` | Weather, outdoor plans, packing, seasonal timing |
+| Maps | `search_places` | Places, coordinates, nearby attractions |
+| Pricing | `estimate_pricing` | Budget or cost questions |
+| Knowledge | `search_travel_knowledge` | Guides, tips, hidden gems, FAQs, destination notes |
+
+The agent does not call every tool on every request. If a provider is down, that tool returns a structured failure and planning continues.
+
+## Phase 5: Frameworks & Orchestration
+
+Phase 5 upgrades planning from a single retrieve-then-generate call into a tool-using agent.
+
+**Before (Phase 4):**
+
+```
+Trip details → Retrieve travel knowledge → LLM response
+```
+
+**After (Phase 5):**
+
+```
+User request → Agent decides → Tool(s) run → LLM combines results → Response
+```
+
+### LLM integration
+
+| Step | Component | Role |
+| --- | --- | --- |
+| Tool selection | LangChain `ChatAnthropic.bind_tools` | Claude decides which tools to call |
+| Tool execution | `app/ai/tools` → `app/ai/providers` | Weather, maps, pricing, RAG; failures become warnings |
+| Workflow | LangGraph `StateGraph` | `reason ⇄ tools → compose` |
+| Final itinerary | Existing `LLMService` (`app/ai/llm`) | Same Claude prompts/parser, now with tool context |
+
+The agent does **not** always run every tool. For *“Plan my Paris trip and include weather-friendly activities.”* it typically:
+
+1. Loads trip details (destination, days, budget, style)
+2. Calls the weather tool
+3. Calls the RAG knowledge tool
+4. Optionally maps/pricing if the request needs them
+5. Composes the itinerary with those results
+
+### Architecture updates
+
+```
+Controller (generate-ai or /planning/)
+    ↓
+PlanningService
+    ↓
+LangGraph agent
+    ↓
+Tool interface
+    ↓
+Weather / Maps / Pricing / Knowledge tools
+    ↓
+Providers or KnowledgeService
+    ↓
+LLMService (compose)
+    ↓
+ItineraryService persist
+```
+
+Swagger: http://localhost:8000/docs — tags **AI Planning** (`POST /planning/`) and **Itineraries** (`POST /itineraries/{trip_id}/generate-ai`).
 
 ## How to learn this project
 
-Study one request through the layers. If you can narrate *“Plan my Paris trip using the destination guide”* from HTTP to Claude and back, you understand the system.
+Study one request through the layers. If you can narrate *“Plan my Paris trip and include weather-friendly activities”* from HTTP to Claude and back, you understand the system.
 
 ### Read in this order
 
@@ -127,9 +225,11 @@ Study one request through the layers. If you can narrate *“Plan my Paris trip 
 2. `app/core/dependencies.py` — JWT
 3. `app/controllers/trip.py` + `app/services/trip.py` — simplest CRUD
 4. `app/controllers/itinerary.py` — `generate-ai` is the product AI entry
-5. `app/services/itinerary.py` — loads the trip, retrieves knowledge, calls Claude
-6. `app/services/knowledge.py` + `app/ai/rag/` — ingest and search
-7. `app/ai/llm/` — Claude composer and JSON parser
+5. `app/services/planning.py` — loads the trip, runs the graph, persists
+6. `app/ai/agents/graph.py` — `reason` → `tools` → `compose`
+7. `app/ai/tools/` + `app/ai/providers/` — agent never does HTTP itself
+8. `app/services/knowledge.py` + `app/ai/rag/` — ingest and search
+9. `app/ai/llm/` — existing Claude composer and JSON parser
 
 `app/services/` is use cases. `app/ai/` is capabilities those use cases call.
 
@@ -137,24 +237,34 @@ Study one request through the layers. If you can narrate *“Plan my Paris trip 
 
 ```
 POST /itineraries/{trip_id}/generate-ai
-    → ItineraryService (load trip)
-    → KnowledgeService.retrieve_context (RAG; skipped if retrieval fails)
-    → LLMService + PromptBuilder + ResponseParser
-    → persist itinerary
+    → PlanningService (load trip)
+    → LangGraph
+         reason  = Claude + bind_tools (should I call weather / RAG / maps / pricing?)
+         tools   = only the tools the model requested; failures become warnings
+         compose = existing LLMService + PromptBuilder + ResponseParser
+    → ItineraryService.create_itinerary
     → { trip_id, itinerary, message }
 ```
 
+`POST /planning/` is the same planner with `tools_used` and `warnings`. It does not require a trip.
+
+### Why there are two Claude calls
+
+- **Reason:** `ChatAnthropic` decides tools.
+- **Compose:** `LLMService` writes the day-by-day JSON using the original prompts.
+
 ### How to practice
 
-1. Trace `KnowledgeService.ingest_document` (hash, chunk, embed, Qdrant).
-2. Call `POST /knowledge/search`, then `POST /itineraries/{trip_id}/generate-ai`.
-3. Open http://localhost:8000/docs and explain `generate-ai` vs `/knowledge/search`.
+1. Draw `START → reason ⇄ tools → compose` on paper.
+2. Read `tests/test_agent.py` (tool pick, skip tools, tool failure).
+3. Trace `KnowledgeService.ingest_document` (hash, chunk, embed, Qdrant).
+4. Open http://localhost:8000/docs and explain `generate-ai` vs `/knowledge/search` vs `/planning/`.
 
 ## Prerequisites
 
-- Python 3.10 or higher (3.11 recommended)
+- Python 3.10 or higher (3.11 recommended; LangChain 1.x requires 3.10+)
 - Docker Desktop (Postgres and Qdrant run in Compose; no local Postgres install needed)
-- An Anthropic API key for itinerary generation
+- An Anthropic API key for itinerary generation and agent tool-calling
 - An OpenAI-compatible embedding key only if you ingest/search the knowledge base with `EMBEDDING_PROVIDER=openai`
 - pip
 
@@ -231,7 +341,7 @@ The server starts at `http://localhost:8000`.
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Token lifetime |
 | `ENVIRONMENT` | `development` enables SQL echo |
 | `DATABASE_POOL_SIZE` | PostgreSQL pool size |
-| `ANTHROPIC_API_KEY` | Claude API key used by `LLMService` |
+| `ANTHROPIC_API_KEY` | Claude API key used by `LLMService` and the agent |
 | `LLM_MODEL` | Claude model (default `claude-haiku-4-5`) |
 | `LLM_TEMPERATURE` | Sampling temperature |
 | `LLM_MAX_TOKENS` | Max tokens for itinerary generation |
@@ -248,6 +358,18 @@ The server starts at `http://localhost:8000`.
 | `RAG_CHUNK_SIZE` | Chunk size in characters |
 | `RAG_CHUNK_OVERLAP` | Chunk overlap |
 | `RAG_TOP_K` | Default retrieval depth |
+| `AGENT_MAX_TOOL_ITERATIONS` | Safety cap on tool loops |
+| `WEATHER_PROVIDER` | Weather provider (`openmeteo`) |
+| `WEATHER_API_URL` | Forecast API base URL |
+| `WEATHER_GEOCODE_URL` | Geocoding API base URL |
+| `WEATHER_API_KEY` | Optional weather key |
+| `MAPS_PROVIDER` | Maps provider (`nominatim`) |
+| `MAPS_API_URL` | Maps API base URL |
+| `MAPS_API_KEY` | Optional maps key |
+| `MAPS_USER_AGENT` | Required by Nominatim |
+| `PRICING_PROVIDER` | Pricing provider (`http`) |
+| `PRICING_API_URL` | Live pricing endpoint; if empty, the pricing tool fails softly |
+| `PRICING_API_KEY` | Optional pricing key |
 
 Never commit real keys. `.env` is gitignored.
 
@@ -303,6 +425,29 @@ curl -X POST "http://localhost:8000/knowledge/search" \
 
 Automated coverage lives in `tests/test_chunker.py`, `tests/test_embeddings.py`, `tests/test_vector_store.py`, `tests/test_retriever.py`, and `tests/test_knowledge_api.py`.
 
+## How to test the agent workflow
+
+Example request:
+
+```bash
+curl -X POST "http://localhost:8000/planning/" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Plan my Paris trip and include weather-friendly activities.",
+    "destination": "Paris",
+    "days": 4,
+    "budget": 1500,
+    "trip_style": "budget"
+  }'
+```
+
+To persist onto an existing trip, pass `trip_id` (and keep `persist_itinerary` true). The saved payload uses the existing itinerary schema: `{ trip_id, itinerary, message }`.
+
+The response includes `tools_used` and `warnings` so you can see whether the model called weather, RAG, maps, or pricing. A weather-focused Paris request should typically call `get_weather` and `search_travel_knowledge`, not every tool.
+
+Automated graph tests (tool selection, multi-tool execution, skipped tools, provider failure) are in `tests/test_agent.py`. API validation and error paths are in `tests/test_planning_api.py`.
+
 ```bash
 pytest
 ```
@@ -339,7 +484,7 @@ All new endpoints include request/response models, validation rules, and documen
 | ------ | ------------------------ | ---------------------------------- |
 | POST   | `/itineraries/`          | Create/update itinerary for a trip |
 | GET    | `/itineraries/{trip_id}` | Get itinerary for a trip           |
-| POST   | `/itineraries/{trip_id}/generate-ai` | Claude + retrieved knowledge, then save |
+| POST   | `/itineraries/{trip_id}/generate-ai` | Claude + optional tools/RAG, then save |
 
 ### Knowledge Base
 
@@ -351,6 +496,12 @@ All new endpoints include request/response models, validation rules, and documen
 | POST   | `/knowledge/documents/{document_id}/reindex` | Rebuild vectors from stored content |
 | DELETE | `/knowledge/documents/{document_id}`     | Delete metadata and vectors          |
 | POST   | `/knowledge/search`                      | Semantic search                      |
+
+### AI Planning
+
+| Method | Endpoint      | Description                                      |
+| ------ | ------------- | ------------------------------------------------ |
+| POST   | `/planning/`  | Run the tool-using agent and return an itinerary |
 
 ## Usage Examples
 
@@ -405,7 +556,7 @@ curl -X POST "http://localhost:8000/trips/" \
 
 ### 4. Create an Itinerary
 
-Manual itineraries still use `POST /itineraries/`. AI generation uses `POST /itineraries/{trip_id}/generate-ai`, which retrieves destination knowledge when available and then calls the original Claude itinerary composer.
+Manual itineraries still use `POST /itineraries/`. AI generation uses the existing `POST /itineraries/{trip_id}/generate-ai` endpoint, which now runs the tool-using agent and then the original Claude itinerary composer. `POST /planning/` is the same planner with a richer response (`tools_used`, `warnings`) and does not require a trip.
 
 ### 5. Get All Trips
 
@@ -458,10 +609,14 @@ ai-vacation-planner/
 │   │   ├── auth.py
 │   │   ├── trip.py
 │   │   ├── itinerary.py
-│   │   └── knowledge.py
-│   ├── ai/                     # Claude and RAG
+│   │   ├── knowledge.py
+│   │   └── planning.py
+│   ├── ai/                     # Claude, RAG, tools, agent
 │   │   ├── llm/
-│   │   └── rag/
+│   │   ├── rag/
+│   │   ├── providers/
+│   │   ├── tools/
+│   │   └── agents/
 │   └── controllers/
 ├── data/knowledge/           # sample travel guides
 ├── scripts/seed_knowledge.py
