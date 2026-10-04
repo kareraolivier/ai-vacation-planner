@@ -68,6 +68,9 @@ class PlanningService:
         }
         result = graph.invoke(initial)
         itinerary = result.get("itinerary") or []
+        warnings = list(result.get("warnings") or [])
+        if getattr(self.tool_registry, "mcp_warning", None):
+            warnings.append(self.tool_registry.mcp_warning)
 
         persisted_trip_id = None
         message = "Trip plan generated successfully"
@@ -91,7 +94,7 @@ class PlanningService:
             "summary": result.get("summary") or "",
             "itinerary": itinerary,
             "tools_used": result.get("tools_used") or [],
-            "warnings": result.get("warnings") or [],
+            "warnings": warnings,
             "message": message,
         }
 

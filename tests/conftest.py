@@ -9,6 +9,11 @@ os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
 os.environ.setdefault("LLM_MODEL", "claude-haiku-4-5")
 os.environ.setdefault("QDRANT_URL", "http://localhost:6333")
 os.environ.setdefault("PRICING_API_URL", "")
+os.environ.setdefault("STT_PROVIDER", "fake")
+os.environ.setdefault("TTS_PROVIDER", "fake")
+os.environ.setdefault("VISION_PROVIDER", "fake")
+os.environ.setdefault("MCP_ENABLED", "true")
+os.environ.setdefault("MCP_TRANSPORT", "inprocess")
 
 import pytest
 from sqlalchemy import create_engine
