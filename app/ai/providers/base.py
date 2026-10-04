@@ -10,6 +10,26 @@ class ProviderError(Exception):
         super().__init__(message)
 
 
+class MultimodalError(Exception):
+    """User-safe multimodal failure. `code` drives HTTP mapping."""
+
+    def __init__(self, message: str, code: str = "provider"):
+        self.code = code
+        super().__init__(message)
+
+
+class SpeechToTextError(MultimodalError):
+    pass
+
+
+class TextToSpeechError(MultimodalError):
+    pass
+
+
+class VisionError(MultimodalError):
+    pass
+
+
 class HttpProviderClient:
     def __init__(self, timeout: float, headers: Optional[Dict[str, str]] = None):
         self.timeout = timeout
@@ -53,4 +73,22 @@ class MapsProvider(ABC):
 class PricingProvider(ABC):
     @abstractmethod
     def estimate(self, destination: str, days: int, budget: Optional[float], trip_style: Optional[str], travelers: int) -> Dict[str, Any]:
+        raise NotImplementedError
+
+
+class SpeechToTextProvider(ABC):
+    @abstractmethod
+    def transcribe(self, audio: bytes, filename: str, content_type: Optional[str] = None) -> Dict[str, Any]:
+        raise NotImplementedError
+
+
+class TextToSpeechProvider(ABC):
+    @abstractmethod
+    def synthesize(self, text: str, voice: Optional[str] = None) -> Dict[str, Any]:
+        raise NotImplementedError
+
+
+class VisionProvider(ABC):
+    @abstractmethod
+    def analyze(self, image: bytes, prompt: str, content_type: Optional[str] = None, filename: Optional[str] = None) -> Dict[str, Any]:
         raise NotImplementedError

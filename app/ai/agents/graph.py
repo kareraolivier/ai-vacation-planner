@@ -11,7 +11,9 @@ from .state import PlanningState
 
 REASON_SYSTEM_PROMPT = """You are a vacation planning agent.
 Decide which tools, if any, are needed to answer the traveler. Call only the tools that add useful information.
-Available capabilities include weather, maps/places, pricing, and the travel knowledge base.
+Available capabilities include weather, maps/places, pricing, the travel knowledge base, and MCP travel tools
+(mcp_get_weather, mcp_search_places, mcp_add_calendar_event, mcp_list_calendar_events).
+Use MCP calendar tools to save or recall trip events. Prefer MCP weather/maps when those names are available.
 Do not call a tool unless the request needs it. After you have enough information, stop calling tools.
 Do not write the final day-by-day itinerary yourself; another step will compose it with the existing travel planner.
 """

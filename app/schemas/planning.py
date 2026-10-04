@@ -28,6 +28,10 @@ class PlanningResponse(BaseModel):
     tools_used: List[str]
     warnings: List[str] = []
     message: str
+    transcription: Optional[str] = None
+    vision_context: Optional[str] = None
+    audio_base64: Optional[str] = None
+    audio_content_type: Optional[str] = None
 
 
 class PlanningErrorResponse(BaseModel):
