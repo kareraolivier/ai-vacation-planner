@@ -33,6 +33,51 @@ class Settings(BaseSettings):
     RAG_CHUNK_SIZE: int = 800
     RAG_CHUNK_OVERLAP: int = 120
     RAG_TOP_K: int = 5
+    AGENT_MAX_TOOL_ITERATIONS: int = 6
+
+    WEATHER_PROVIDER: str = "openmeteo"
+    WEATHER_API_URL: str = "https://api.open-meteo.com/v1"
+    WEATHER_GEOCODE_URL: str = "https://geocoding-api.open-meteo.com/v1"
+    WEATHER_API_KEY: Optional[str] = None
+    WEATHER_TIMEOUT: float = 10.0
+
+    MAPS_PROVIDER: str = "nominatim"
+    MAPS_API_URL: str = "https://nominatim.openstreetmap.org"
+    MAPS_API_KEY: Optional[str] = None
+    MAPS_USER_AGENT: str = "ai-vacation-planner/1.0"
+    MAPS_TIMEOUT: float = 10.0
+
+    PRICING_PROVIDER: str = "http"
+    PRICING_API_URL: Optional[str] = None
+    PRICING_API_KEY: Optional[str] = None
+    PRICING_TIMEOUT: float = 10.0
+
+    OPENAI_API_KEY: Optional[str] = None
+
+    STT_PROVIDER: str = "openai"
+    STT_API_KEY: Optional[str] = None
+    STT_MODEL: str = "whisper-1"
+    STT_TIMEOUT: float = 30.0
+    STT_MAX_BYTES: int = 10 * 1024 * 1024
+    STT_ALLOWED_FORMATS: str = "mp3,wav,m4a,webm,ogg,flac,mpeg,mp4"
+
+    TTS_PROVIDER: str = "openai"
+    TTS_API_KEY: Optional[str] = None
+    TTS_MODEL: str = "tts-1"
+    TTS_VOICE: str = "alloy"
+    TTS_TIMEOUT: float = 30.0
+
+    VISION_PROVIDER: str = "anthropic"
+    VISION_API_KEY: Optional[str] = None
+    VISION_MODEL: str = "claude-haiku-4-5"
+    VISION_TIMEOUT: float = 30.0
+    VISION_MAX_BYTES: int = 5 * 1024 * 1024
+    VISION_ALLOWED_FORMATS: str = "jpeg,jpg,png,gif,webp"
+
+    MCP_ENABLED: bool = True
+    MCP_TRANSPORT: str = "inprocess"
+    MCP_TIMEOUT: float = 15.0
+    MCP_SERVER_COMMAND: Optional[str] = None
 
     class Config:
         env_file = ".env"
