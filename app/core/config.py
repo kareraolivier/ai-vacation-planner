@@ -79,6 +79,19 @@ class Settings(BaseSettings):
     MCP_TIMEOUT: float = 15.0
     MCP_SERVER_COMMAND: Optional[str] = None
 
+    GUARDRAILS_ENABLED: bool = True
+    GUARDRAILS_REJECT_INVALID: bool = True
+    EVALUATION_ENABLED: bool = True
+    EVALUATION_MIN_SCORE: float = 0.6
+    OBSERVABILITY_ENABLED: bool = True
+    OBSERVABILITY_MAX_TRACES: int = 200
+
+    DATADOG_ENABLED: bool = False
+    DD_SERVICE: str = "ai-vacation-planner"
+    DD_ENV: str = "development"
+    DD_AGENT_HOST: str = "localhost"
+    DD_DOGSTATSD_PORT: int = 8125
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .core.database import engine, Base
-from .controllers import auth, trip, itinerary, knowledge, planning, multimodal, mcp
+from .controllers import auth, trip, itinerary, knowledge, planning, multimodal, mcp, evaluation, observability
+from .ai.observability import initialize_datadog
+from .ai.observability.middleware import ObservabilityMiddleware
 
 Base.metadata.create_all(bind=engine)
+initialize_datadog()
 
 app = FastAPI(
     title="AI Vacation Planner API",
@@ -11,9 +14,10 @@ app = FastAPI(
         "Backend API for trip planning. Users can manage trips and itineraries, "
         "ingest travel knowledge for RAG, and generate itineraries through a "
         "LangGraph agent that selectively uses weather, maps, pricing, knowledge, and MCP tools. "
-        "Voice and image inputs are transcribed or understood, then passed into the same planner."
+        "Voice and image inputs are transcribed or understood, then passed into the same planner. "
+        "Phase 7 adds input/output guardrails, itinerary evaluation, and agent observability."
     ),
-    version="1.2.0",
+    version="1.3.0",
     openapi_tags=[
         {"name": "Authentication", "description": "Register and login"},
         {"name": "Trips", "description": "Create and manage trips"},
@@ -22,6 +26,8 @@ app = FastAPI(
         {"name": "AI Planning", "description": "Tool-using agent for vacation planning, including voice and image"},
         {"name": "Multimodal", "description": "Speech-to-text, text-to-speech, and image understanding"},
         {"name": "MCP", "description": "Model Context Protocol travel tools"},
+        {"name": "Evaluation", "description": "Score itineraries for relevance, completeness, validity, and format"},
+        {"name": "Observability", "description": "Latency, token usage, model, errors, and failed requests"},
     ],
 )
 
@@ -33,6 +39,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(ObservabilityMiddleware)
 
 # Routers
 app.include_router(auth.router)
@@ -42,6 +49,8 @@ app.include_router(knowledge.router)
 app.include_router(planning.router)
 app.include_router(multimodal.router)
 app.include_router(mcp.router)
+app.include_router(evaluation.router)
+app.include_router(observability.router)
 
 @app.get("/")
 def root():

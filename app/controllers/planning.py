@@ -12,7 +12,7 @@ from ..services.planning import PlanningService
 from ..ai.providers.base import MultimodalError
 from ..ai.rag.embeddings import EmbeddingError
 from ..ai.rag.vector_store import VectorStoreError
-from .errors import raise_capability_error
+from .errors import raise_capability_error, raise_planning_error
 
 router = APIRouter(prefix="/planning", tags=["AI Planning"])
 
@@ -22,15 +22,18 @@ router = APIRouter(prefix="/planning", tags=["AI Planning"])
     response_model=PlanningResponse,
     status_code=status.HTTP_200_OK,
     responses={
-        400: {"model": PlanningErrorResponse, "description": "Invalid request or trip not found"},
+        400: {"model": PlanningErrorResponse, "description": "Invalid request, prompt injection, or unsupported action"},
         401: {"model": PlanningErrorResponse, "description": "Missing or invalid token"},
         404: {"model": PlanningErrorResponse, "description": "Trip not found"},
+        422: {"model": PlanningErrorResponse, "description": "Generated itinerary failed guardrails"},
         503: {"model": PlanningErrorResponse, "description": "LLM, tool, or knowledge backend unavailable"},
     },
     summary="Generate a vacation plan with the tool-using agent",
     description=(
-        "Runs the LangGraph planning agent. The model selects tools (weather, maps, pricing, "
-        "travel knowledge) only when they are useful, then composes a day-by-day itinerary. "
+        "Runs input guardrails, then the LangGraph planning agent. The model selects tools "
+        "(weather, maps, pricing, travel knowledge) only when they are useful, then composes "
+        "a day-by-day itinerary. Output is validated and scored. The response includes "
+        "evaluation scores plus latency, token usage, and model. "
         "When trip_id is provided and persist_itinerary is true, the itinerary is stored with "
         "the existing itinerary service."
     ),
@@ -44,10 +47,11 @@ def plan_vacation(
     user_id: UUID = cast(UUID, current_user.id)
     try:
         return service.plan_trip(user_id, request)
-    except ValueError as exc:
-        status_code = status.HTTP_404_NOT_FOUND if str(exc) == "Trip not found" else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=status_code, detail=str(exc))
-    except (RuntimeError, EmbeddingError, VectorStoreError) as exc:
+    except (ValueError, RuntimeError) as exc:
+        if isinstance(exc, (EmbeddingError, VectorStoreError)):
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+        raise_planning_error(exc)
+    except (EmbeddingError, VectorStoreError) as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
 
 
@@ -100,10 +104,9 @@ def plan_vacation_from_voice(
             request,
             include_speech=include_speech,
         )
-    except ValueError as exc:
-        status_code = status.HTTP_404_NOT_FOUND if str(exc) == "Trip not found" else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=status_code, detail=str(exc))
-    except (RuntimeError, EmbeddingError, VectorStoreError) as exc:
+    except (ValueError, RuntimeError) as exc:
+        raise_planning_error(exc)
+    except (EmbeddingError, VectorStoreError) as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
     except MultimodalError as exc:
         raise_capability_error(exc)
@@ -158,10 +161,9 @@ def plan_vacation_from_image(
             request,
             include_speech=include_speech,
         )
-    except ValueError as exc:
-        status_code = status.HTTP_404_NOT_FOUND if str(exc) == "Trip not found" else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=status_code, detail=str(exc))
-    except (RuntimeError, EmbeddingError, VectorStoreError) as exc:
+    except (ValueError, RuntimeError) as exc:
+        raise_planning_error(exc)
+    except (EmbeddingError, VectorStoreError) as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
     except MultimodalError as exc:
         raise_capability_error(exc)

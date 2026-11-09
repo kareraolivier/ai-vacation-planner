@@ -1,0 +1,65 @@
+{
+  "title": "AI Vacation Planner",
+  "description": "Latency, token usage, model, errors, and failed planning requests.",
+  "layout_type": "ordered",
+  "widgets": [
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Planning latency (ms)",
+        "requests": [
+          {
+            "q": "avg:vacation.planner.latency_ms{service:ai-vacation-planner}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Token usage",
+        "requests": [
+          {
+            "q": "sum:vacation.planner.tokens{service:ai-vacation-planner}"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Requests by model",
+        "requests": [
+          {
+            "q": "sum:vacation.planner.requests{service:ai-vacation-planner} by {model}",
+            "display_type": "bars"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Errors",
+        "requests": [
+          {
+            "q": "sum:vacation.planner.errors{service:ai-vacation-planner}"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Failed requests",
+        "requests": [
+          {
+            "q": "sum:vacation.planner.failed_requests{service:ai-vacation-planner}",
+            "display_type": "bars"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+[
+  {
+    "id": "paris-rain-3-days",
+    "input": "Plan my Paris trip and include weather-friendly activities.",
+    "destination": "Paris",
+    "days": 3,
+    "budget": 1500,
+    "trip_style": "budget",
+    "expected_tools": ["get_weather", "search_travel_knowledge"],
+    "expect_pass": true,
+    "actual_output": {
+      "days": [
+        {
+          "day": 1,
+          "activities": [
+            "Morning: Musee d'Orsay indoor galleries",
+            "Afternoon: Covered passages around Galerie Vivienne",
+            "Evening: Dinner in the Latin Quarter"
+          ]
+        },
+        {
+          "day": 2,
+          "activities": [
+            "Morning: Louvre highlights",
+            "Afternoon: Sainte-Chapelle and Ile de la Cite",
+            "Evening: Seine cruise if rain eases"
+          ]
+        },
+        {
+          "day": 3,
+          "activities": [
+            "Morning: Centre Pompidou",
+            "Afternoon: Marais cafes and museums",
+            "Evening: Budget bistro near Hotel de Ville in Paris"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "tokyo-luxury-4-days",
+    "input": "Plan a luxury Tokyo trip with great food.",
+    "destination": "Tokyo",
+    "days": 4,
+    "budget": 8000,
+    "trip_style": "luxury",
+    "expect_pass": true,
+    "actual_output": {
+      "days": [
+        {
+          "day": 1,
+          "activities": ["Tsukiji outer market tasting", "Ginza shopping", "Sushi omakase dinner"]
+        },
+        {
+          "day": 2,
+          "activities": ["Meiji Jingu", "Omotesando cafes", "TeamLab Planets"]
+        },
+        {
+          "day": 3,
+          "activities": ["Day trip to Hakone onsen", "Ryokan kaiseki dinner"]
+        },
+        {
+          "day": 4,
+          "activities": ["Tokyo National Museum", "Yanaka walk", "Farewell ramen in Shinjuku"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "incomplete-barcelona",
+    "input": "Plan 5 days in Barcelona for a family.",
+    "destination": "Barcelona",
+    "days": 5,
+    "expect_pass": false,
+    "actual_output": {
+      "days": [
+        {
+          "day": 1,
+          "activities": ["Sagrada Familia"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "wrong-destination",
+    "input": "Plan my Paris trip.",
+    "destination": "Paris",
+    "days": 2,
+    "expect_pass": false,
+    "actual_output": {
+      "days": [
+        {
+          "day": 1,
+          "activities": ["Tokyo Skytree", "Shibuya crossing"]
+        },
+        {
+          "day": 2,
+          "activities": ["Senso-ji in Asakusa", "Akihabara electronics"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "invalid-format",
+    "input": "Plan a 2-day Lisbon trip.",
+    "destination": "Lisbon",
+    "days": 2,
+    "expect_pass": false,
+    "actual_output": "Sure, have fun in Lisbon!"
+  }
+]
