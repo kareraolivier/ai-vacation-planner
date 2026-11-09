@@ -2,6 +2,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 
+from .evaluation import EvaluationResult
+from .observability import ObservabilitySnapshot
+
 class PlanningRequest(BaseModel):
     message: str = Field(
         ...,
@@ -32,6 +35,8 @@ class PlanningResponse(BaseModel):
     vision_context: Optional[str] = None
     audio_base64: Optional[str] = None
     audio_content_type: Optional[str] = None
+    evaluation: Optional[EvaluationResult] = None
+    observability: Optional[ObservabilitySnapshot] = None
 
 
 class PlanningErrorResponse(BaseModel):

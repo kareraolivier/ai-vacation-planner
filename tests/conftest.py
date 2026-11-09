@@ -14,6 +14,12 @@ os.environ.setdefault("TTS_PROVIDER", "fake")
 os.environ.setdefault("VISION_PROVIDER", "fake")
 os.environ.setdefault("MCP_ENABLED", "true")
 os.environ.setdefault("MCP_TRANSPORT", "inprocess")
+os.environ.setdefault("GUARDRAILS_ENABLED", "true")
+os.environ.setdefault("GUARDRAILS_REJECT_INVALID", "true")
+os.environ.setdefault("EVALUATION_ENABLED", "true")
+os.environ.setdefault("OBSERVABILITY_ENABLED", "true")
+os.environ.setdefault("DATADOG_ENABLED", "false")
+os.environ.setdefault("DEEPEVAL_TELEMETRY_OPT_OUT", "1")
 
 import pytest
 from sqlalchemy import create_engine

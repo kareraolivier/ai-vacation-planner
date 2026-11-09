@@ -9,7 +9,7 @@ from ..services.planning import PlanningService
 from ..schemas.itinerary import GenerateAIRequest, ItineraryCreate, ItineraryOutput
 from ..schemas.planning import PlanningRequest
 from ..ai.providers.base import MultimodalError
-from .errors import raise_capability_error
+from .errors import raise_capability_error, raise_planning_error
 from typing import Optional, cast
 from uuid import UUID
 
@@ -88,11 +88,8 @@ def generate_ai_itinerary(
                 persist_itinerary=True,
             ),
         )
-    except ValueError as exc:
-        status_code = status.HTTP_404_NOT_FOUND if str(exc) == "Trip not found" else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=status_code, detail=str(exc))
-    except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+    except (ValueError, RuntimeError) as exc:
+        raise_planning_error(exc)
 
     return {
         "trip_id": result["trip_id"],
@@ -135,11 +132,8 @@ def generate_ai_itinerary_from_voice(
             audio.content_type,
             request,
         )
-    except ValueError as exc:
-        status_code = status.HTTP_404_NOT_FOUND if str(exc) == "Trip not found" else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=status_code, detail=str(exc))
-    except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+    except (ValueError, RuntimeError) as exc:
+        raise_planning_error(exc)
     except MultimodalError as exc:
         raise_capability_error(exc)
 
@@ -190,11 +184,8 @@ def generate_ai_itinerary_from_image(
             image.content_type,
             request,
         )
-    except ValueError as exc:
-        status_code = status.HTTP_404_NOT_FOUND if str(exc) == "Trip not found" else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=status_code, detail=str(exc))
-    except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+    except (ValueError, RuntimeError) as exc:
+        raise_planning_error(exc)
     except MultimodalError as exc:
         raise_capability_error(exc)
 

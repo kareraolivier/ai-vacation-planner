@@ -152,12 +152,14 @@ activemq-data/
 *.sqlite3
 
 # Environments
+.env
 .envrc
 .venv
 env/
 venv/
 ENV/
 env.bak/
+env
 venv.bak/
 
 # Spyder project settings

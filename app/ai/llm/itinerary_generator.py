@@ -3,11 +3,13 @@ from typing import List, Dict, Any, Optional
 import anthropic
 
 from app.core.config import settings
+from app.ai.guardrails.errors import GuardrailError
 from app.ai.llm.itenerary_prompt import PromptBuilder
 from app.ai.llm.response_parser import (
     ResponseParser,
     FallbackItinerary
 )
+from app.ai.observability import extract_usage, record_llm_usage
 
 
 class LLMService:
@@ -59,14 +61,25 @@ class LLMService:
                     }
                 ]
             )
-
+            usage = extract_usage(response)
+            record_llm_usage(
+                prompt_tokens=usage["prompt_tokens"],
+                completion_tokens=usage["completion_tokens"],
+                model=self.model,
+            )
             response_text = response.content[0].text
-
             return self.parser.parse_itinerary_response(
                 response_text=response_text,
                 expected_days=days
             )
-        
+
+        except ValueError as exc:
+            if settings.GUARDRAILS_REJECT_INVALID:
+                raise GuardrailError(str(exc), code="invalid_output") from exc
+            return self.fallback.create(
+                destination=destination,
+                days=days
+            )
 
         except Exception as e:
             print(f"Claude error: {e}")

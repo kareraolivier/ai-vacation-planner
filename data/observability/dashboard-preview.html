@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Vacation Planner Observability</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; background: #0f172a; color: #e2e8f0; }
+    header { padding: 24px 32px; border-bottom: 1px solid #1e293b; }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    p { margin: 0; color: #94a3b8; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; padding: 24px 32px; }
+    .card { background: #1e293b; border-radius: 12px; padding: 16px 18px; }
+    .label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; }
+    .value { font-size: 28px; font-weight: 700; margin-top: 8px; }
+    table { width: calc(100% - 64px); margin: 0 32px 32px; border-collapse: collapse; background: #1e293b; border-radius: 12px; overflow: hidden; }
+    th, td { text-align: left; padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #334155; }
+    th { color: #94a3b8; font-weight: 600; }
+    .ok { color: #4ade80; }
+    .bad { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AI Vacation Planner</h1>
+    <p>Latency, tokens, model, errors, and failed requests · ai-vacation-planner / development</p>
+  </header>
+  <section class="grid">
+    <div class="card"><div class="label">Requests</div><div class="value">2</div></div>
+    <div class="card"><div class="label">Avg latency</div><div class="value">0.03 ms</div></div>
+    <div class="card"><div class="label">Tokens</div><div class="value">0</div></div>
+    <div class="card"><div class="label">Errors</div><div class="value">2</div></div>
+    <div class="card"><div class="label">Failed requests</div><div class="value">2</div></div>
+    <div class="card"><div class="label">Blocked</div><div class="value">2</div></div>
+  </section>
+  <table>
+    <thead>
+      <tr><th>Span</th><th>Model</th><th>Latency</th><th>Tokens</th><th>Status</th></tr>
+    </thead>
+    <tbody><tr><td>plan_trip</td><td>claude-haiku-4-5</td><td>0.03 ms</td><td>0</td><td><span class="bad">failed</span></td></tr><tr><td>plan_trip</td><td>claude-haiku-4-5</td><td>0.03 ms</td><td>0</td><td><span class="bad">failed</span></td></tr></tbody>
+  </table>
+</body>
+</html>
